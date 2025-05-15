@@ -1,0 +1,103 @@
+services:
+  # Aplikasi API Forum
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: forum-api
+    working_dir: /usr/src/app
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      NODE_ENV: development
+      # Database produksi
+      PGUSER: "${PGUSER}"
+      PGPASSWORD: "${PGPASSWORD}"
+      PGHOST: "postgres-db"
+      PGPORT: "5432"
+      PGDATABASE: "${PGDATABASE}"
+      # Database test (untuk referensi dalam aplikasi)
+      PGUSER_TEST: "${PGUSER_TEST}"
+      PGPASSWORD_TEST: "${PGPASSWORD_TEST}"
+      PGHOST_TEST: "postgres-test"
+      PGPORT_TEST: "5432"
+      PGDATABASE_TEST: "${PGDATABASE_TEST}"
+      # JWT Token
+      ACCESS_TOKEN_KEY: "${ACCESS_TOKEN_KEY}"
+      REFRESH_TOKEN_KEY: "${REFRESH_TOKEN_KEY}"
+      ACCCESS_TOKEN_AGE: "${ACCCESS_TOKEN_AGE}"
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      postgres-test:
+        condition: service_healthy
+    command: >
+      sh -c "
+        npm run migrate:test up &&
+        npm run migrate up &&
+        npm run start"
+    networks:
+      - forum-network
+    restart: unless-stopped
+
+  # Database Produksi
+  postgres-db:
+    image: postgres:15.10-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: "${PGUSER}"
+      POSTGRES_PASSWORD: "${PGPASSWORD}"
+      POSTGRES_DB: "${PGDATABASE}"
+      # Tambahkan ini untuk membuat user dan database default
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db-prod.sh:/docker-entrypoint-initdb.d/init-db-prod.sh
+    ports:
+      - "${PGPORT:-5432}:5432"
+    networks:
+      - forum-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER} -d ${PGDATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Database Test (terpisah)
+  postgres-test:
+    image: postgres:15.10-alpine
+    container_name: postgres-test
+    environment:
+      POSTGRES_USER: "${PGUSER_TEST}"
+      POSTGRES_PASSWORD: "${PGPASSWORD_TEST}"
+      POSTGRES_DB: "${PGDATABASE_TEST}"
+      # Tambahkan ini untuk membuat user dan database default
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+      - ./init-db-test.sh:/docker-entrypoint-initdb.d/init-db-test.sh
+    ports:
+      - "${PGPORT_TEST:-5433}:5432"
+    networks:
+      - forum-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER_TEST} -d ${PGDATABASE_TEST}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    name: forum-postgres-data
+  postgres-test-data:
+    name: forum-postgres-test-data
+
+networks:
+  forum-network:
+    name: forum-network
+    driver: bridge
