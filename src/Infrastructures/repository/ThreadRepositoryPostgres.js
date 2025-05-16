@@ -1,4 +1,4 @@
-const InvariantError = require("../../Commons/exceptions/InvariantError");
+const NotFoundError = require("../../Commons/exceptions/NotFoundError");
 const AddedThread = require("../../Domains/threads/entities/AddedThread");
 const ThreadRepository = require("../../Domains/threads/ThreadRepository");
 
@@ -27,7 +27,7 @@ class ThreadRepositoryPostgres extends ThreadRepository {
       // Check for foreign key violation (ownerId not in users table)
       // PostgreSQL error code for foreign key violation is 23503
       if (error.code === "23503") {
-        throw new InvariantError(
+        throw new NotFoundError(
           "Failed to add thread. User ID not found or invalid."
         );
       }
@@ -48,7 +48,7 @@ class ThreadRepositoryPostgres extends ThreadRepository {
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new InvariantError("Threads with that ID were not found.");
+      throw new NotFoundError("Thread tidak ditemukan");
     }
   }
 
@@ -64,9 +64,7 @@ class ThreadRepositoryPostgres extends ThreadRepository {
     const result = await this._pool.query(query);
 
     if (!result.rowCount) {
-      throw new InvariantError(
-        "Thread details could not be retrieved because the thread was not found."
-      );
+      throw new NotFoundError("Thread tidak ditemukan");
     }
     return result.rows[0];
   }
