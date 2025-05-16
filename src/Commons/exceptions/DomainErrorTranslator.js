@@ -1,4 +1,5 @@
 const InvariantError = require("./InvariantError");
+const NotFoundError = require("./NotFoundError");
 
 const DomainErrorTranslator = {
   translate(error) {
@@ -44,6 +45,16 @@ DomainErrorTranslator._directories = {
   "NEW_THREAD.TITLE_LIMIT_CHAR": new InvariantError(
     "panjang title melebihi batas limit"
   ),
+  "THREAD.NOT_FOUND": new NotFoundError("thread tidak ditemukan"),
+
+  // Comment translations
+  "NEW_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY": new InvariantError(
+    "harus mengirimkan content"
+  ),
+  "NEW_COMMENT.NOT_MEET_DATA_TYPE_SPECIFICATION": new InvariantError(
+    "content harus berupa string"
+  ),
+  "COMMENT.NOT_FOUND": new NotFoundError("komentar tidak ditemukan"),
 };
 
 module.exports = DomainErrorTranslator;
