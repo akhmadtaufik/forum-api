@@ -1,5 +1,6 @@
 const DomainErrorTranslator = require("../DomainErrorTranslator");
 const InvariantError = require("../InvariantError");
+const NotFoundError = require("../NotFoundError");
 
 describe("DomainErrorTranslator", () => {
   it("should translate error correctly", () => {
@@ -52,6 +53,24 @@ describe("DomainErrorTranslator", () => {
     expect(
       DomainErrorTranslator.translate(new Error("NEW_THREAD.TITLE_LIMIT_CHAR"))
     ).toStrictEqual(new InvariantError("panjang title melebihi batas limit"));
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("NEW_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY")
+      )
+    ).toStrictEqual(new InvariantError("harus mengirimkan content"));
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("NEW_COMMENT.NOT_MEET_DATA_TYPE_SPECIFICATION")
+      )
+    ).toStrictEqual(new InvariantError("content harus berupa string"));
+
+    // NotFoundError translations
+    expect(
+      DomainErrorTranslator.translate(new Error("THREAD.NOT_FOUND"))
+    ).toStrictEqual(new NotFoundError("thread tidak ditemukan"));
+    expect(
+      DomainErrorTranslator.translate(new Error("COMMENT.NOT_FOUND"))
+    ).toStrictEqual(new NotFoundError("komentar tidak ditemukan"));
   });
 
   it("should return original error when error message is not needed to translate", () => {
