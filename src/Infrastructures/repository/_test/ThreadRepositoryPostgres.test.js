@@ -1,6 +1,6 @@
 const ThreadsTableTestHelper = require("../../../../tests/ThreadsTableTestHelper");
 const UsersTableTestHelper = require("../../../../tests/UsersTableTestHelper");
-const InvariantError = require("../../../Commons/exceptions/InvariantError");
+const NotFoundError = require("../../../Commons/exceptions/NotFoundError");
 const NewThread = require("../../../Domains/threads/entities/NewThread");
 const AddedThread = require("../../../Domains/threads/entities/AddedThread");
 const ThreadRepositoryPostgres = require("../ThreadRepositoryPostgres");
@@ -65,7 +65,7 @@ describe("ThreadRepositoryPostgres integration test", () => {
       expect(addedThread.owner).toEqual(testUserId);
     });
 
-    it("should throw InvariantError when adding thread with non-existent owner", async () => {
+    it("should throw NotFoundError when adding thread with non-existent owner", async () => {
       // Arrange
       const newThreadPayload = new NewThread({
         title: "Test Title Fail Owner",
@@ -81,12 +81,12 @@ describe("ThreadRepositoryPostgres integration test", () => {
       // Action & Assert
       await expect(
         threadRepositoryPostgres.addThread(newThreadPayload, nonExistentOwnerId)
-      ).rejects.toThrow(InvariantError);
+      ).rejects.toThrow(NotFoundError);
     });
   });
 
   describe("verifyThreadExists method", () => {
-    it("should not throw InvariantError if thread exists", async () => {
+    it("should not throw NotFoundError if thread exists", async () => {
       // Arrange
       const existingThreadId = "thread-exists-001";
       await ThreadsTableTestHelper.addThread({
@@ -98,10 +98,10 @@ describe("ThreadRepositoryPostgres integration test", () => {
       // Action & Assert
       await expect(
         threadRepositoryPostgres.verifyThreadExists(existingThreadId)
-      ).resolves.not.toThrow(InvariantError);
+      ).resolves.not.toThrow(NotFoundError);
     });
 
-    it("should throw InvariantError if thread does not exist", async () => {
+    it("should throw NotFoundError if thread does not exist", async () => {
       // Arrange
       const nonExistingThreadId = "thread-not-exists-001";
       const threadRepositoryPostgres = new ThreadRepositoryPostgres(pool, {});
@@ -109,7 +109,7 @@ describe("ThreadRepositoryPostgres integration test", () => {
       // Action & Assert
       await expect(
         threadRepositoryPostgres.verifyThreadExists(nonExistingThreadId)
-      ).rejects.toThrow(InvariantError);
+      ).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -143,7 +143,7 @@ describe("ThreadRepositoryPostgres integration test", () => {
       expect(() => new Date(result.date)).not.toThrow();
     });
 
-    it("should throw InvariantError if thread does not exist when getting details", async () => {
+    it("should throw NotFoundError if thread does not exist when getting details", async () => {
       // Arrange
       const nonExistingThreadId = "thread-detail-not-exists-001";
       const threadRepositoryPostgres = new ThreadRepositoryPostgres(pool, {});
@@ -151,7 +151,7 @@ describe("ThreadRepositoryPostgres integration test", () => {
       // Action & Assert
       await expect(
         threadRepositoryPostgres.getThreadById(nonExistingThreadId)
-      ).rejects.toThrow(InvariantError);
+      ).rejects.toThrow(NotFoundError);
     });
   });
 });
