@@ -29,6 +29,11 @@ const ThreadRepository = require("../Domains/threads/ThreadRepository");
 const ThreadRepositoryPostgres = require("./repository/ThreadRepositoryPostgres");
 const AddThreadUseCase = require("../Applications/use_case/AddThreadUseCase");
 
+// For comments
+const CommentRepository = require("../Domains/comments/CommentRepository");
+const CommentRepositoryPostgres = require("../Infrastructures/repository/CommentRepositoryPostgres");
+const AddCommentUseCase = require("../Applications/use_case/AddCommentUseCase");
+
 // creating container
 const container = createContainer();
 
@@ -96,16 +101,10 @@ container.register([
     },
   },
   {
-    key: AddThreadUseCase.name,
-    Class: AddThreadUseCase,
+    key: CommentRepository.name,
+    Class: CommentRepositoryPostgres,
     parameter: {
-      injectType: "destructuring",
-      dependencies: [
-        {
-          name: "threadRepository",
-          internal: ThreadRepository.name,
-        },
-      ],
+      dependencies: [{ concrete: pool }, { concrete: nanoid }],
     },
   },
 ]);
@@ -194,6 +193,17 @@ container.register([
           name: "threadRepository",
           internal: ThreadRepository.name,
         },
+      ],
+    },
+  },
+  {
+    key: AddCommentUseCase.name,
+    Class: AddCommentUseCase,
+    parameter: {
+      injectType: "destructuring",
+      dependencies: [
+        { name: "commentRepository", internal: CommentRepository.name },
+        { name: "threadRepository", internal: ThreadRepository.name },
       ],
     },
   },
