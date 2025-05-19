@@ -1,10 +1,12 @@
-const ThreadsTableTestHelper = require("../../../../tests/ThreadsTableTestHelper");
+const pool = require("../../database/postgres/pool");
 const UsersTableTestHelper = require("../../../../tests/UsersTableTestHelper");
-const NotFoundError = require("../../../Commons/exceptions/NotFoundError");
+const ThreadsTableTestHelper = require("../../../../tests/ThreadsTableTestHelper");
+const CommentsTableTestHelper = require("../../../../tests/CommentsTableTestHelper");
 const NewThread = require("../../../Domains/threads/entities/NewThread");
 const AddedThread = require("../../../Domains/threads/entities/AddedThread");
 const ThreadRepositoryPostgres = require("../ThreadRepositoryPostgres");
-const pool = require("../../database/postgres/pool");
+const CommentRepositoryPostgres = require("../CommentRepositoryPostgres");
+const NotFoundError = require("../../../Commons/exceptions/NotFoundError");
 
 describe("ThreadRepositoryPostgres integration test", () => {
   const testUserId = "user-repo-test-001";
