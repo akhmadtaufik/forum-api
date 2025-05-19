@@ -2,18 +2,16 @@ const pool = require("../../database/postgres/pool");
 const UsersTableTestHelper = require("../../../../tests/UsersTableTestHelper");
 const AuthenticationsTableTestHelper = require("../../../../tests/AuthenticationsTableTestHelper");
 const ThreadsTableTestHelper = require("../../../../tests/ThreadsTableTestHelper");
-const CommentRepositoryPostgres = require("../../repository/CommentRepositoryPostgres");
+const CommentsTableTestHelper = require("../../../../tests/CommentsTableTestHelper");
 const createServer = require("../../../Infrastructures/http/createServer");
 const container = require("../../container");
-const NotFoundError = require("../../../Commons/exceptions/NotFoundError");
-const CommentsTableTestHelper = require("../../../../tests/CommentsTableTestHelper");
 
 describe("/comments endpoint functional tests", () => {
   let server;
   let accessToken;
   let threadId;
+  let commentId;
   const testUser = {
-    id: "user-123",
     username: "funccommentuser",
     password: "password123",
     fullname: "Comment User",
@@ -26,11 +24,7 @@ describe("/comments endpoint functional tests", () => {
     await server.inject({
       method: "POST",
       url: "/users",
-      payload: {
-        username: testUser.username,
-        password: testUser.password,
-        fullname: testUser.fullname,
-      },
+      payload: testUser,
     });
 
     // Login user
@@ -42,12 +36,13 @@ describe("/comments endpoint functional tests", () => {
         password: testUser.password,
       },
     });
+
     const {
       data: { accessToken: token },
     } = JSON.parse(loginResponse.payload);
     accessToken = token;
 
-    // Create thread for comment testing
+    // Create thread
     const threadResponse = await server.inject({
       method: "POST",
       url: "/threads",
@@ -57,12 +52,18 @@ describe("/comments endpoint functional tests", () => {
       },
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    const {
-      data: {
-        addedThread: { id: createdThreadId },
-      },
-    } = JSON.parse(threadResponse.payload);
-    threadId = createdThreadId;
+
+    threadId = JSON.parse(threadResponse.payload).data.addedThread.id;
+
+    // Create comment
+    const commentResponse = await server.inject({
+      method: "POST",
+      url: `/threads/${threadId}/comments`,
+      payload: { content: "Test comment" },
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    commentId = JSON.parse(commentResponse.payload).data.addedComment.id;
   });
 
   afterEach(async () => {
@@ -71,12 +72,12 @@ describe("/comments endpoint functional tests", () => {
 
   afterAll(async () => {
     await UsersTableTestHelper.cleanTable();
-    await AuthenticationsTableTestHelper.cleanTable();
     await ThreadsTableTestHelper.cleanTable();
+    await AuthenticationsTableTestHelper.cleanTable();
     await pool.end();
   });
 
-  describe("POST /threads/{threadId}/comments", () => {
+  describe("POST /threads/{threadId}/comments endpoint", () => {
     it("should respond 201 and persist comment", async () => {
       // Arrange
       const payload = { content: "Test comment" };
@@ -163,6 +164,121 @@ describe("/comments endpoint functional tests", () => {
       });
 
       // Assert
+      expect(response.statusCode).toEqual(401);
+    });
+  });
+
+  describe("DELETE /threads/{threadId}/comments/{commentId}", () => {
+    it("should respond 200 and soft delete the comment", async () => {
+      // Arrange: tambahkan comment baru via endpoint
+      const responseCreate = await server.inject({
+        method: "POST",
+        url: `/threads/${threadId}/comments`,
+        payload: { content: "Another comment" },
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const newCommentId = JSON.parse(responseCreate.payload).data.addedComment
+        .id;
+
+      // Act
+      const response = await server.inject({
+        method: "DELETE",
+        url: `/threads/${threadId}/comments/${newCommentId}`,
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      // Assert
+      const responseJson = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(200);
+      expect(responseJson.status).toEqual("success");
+
+      const comments = await CommentsTableTestHelper.findCommentById(
+        newCommentId
+      );
+      expect(comments).toHaveLength(1);
+      expect(comments[0].is_deleted).toEqual(true);
+    });
+
+    it("should respond 404 when thread not found", async () => {
+      const response = await server.inject({
+        method: "DELETE",
+        url: `/threads/thread-not-found/comments/${commentId}`,
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      const responseJson = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(404);
+      expect(responseJson.status).toEqual("fail");
+      expect(responseJson.message).toBeDefined();
+    });
+
+    it("should respond 404 when comment not found", async () => {
+      const response = await server.inject({
+        method: "DELETE",
+        url: `/threads/${threadId}/comments/comment-not-found`,
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      const responseJson = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(404);
+      expect(responseJson.status).toEqual("fail");
+      expect(responseJson.message).toBeDefined();
+    });
+
+    it("should respond 403 when user is not the owner", async () => {
+      // Register another user
+      await server.inject({
+        method: "POST",
+        url: "/users",
+        payload: {
+          username: "otheruser",
+          password: "password123",
+          fullname: "Other User",
+        },
+      });
+
+      const loginOther = await server.inject({
+        method: "POST",
+        url: "/authentications",
+        payload: {
+          username: "otheruser",
+          password: "password123",
+        },
+      });
+
+      const {
+        data: { accessToken: otherToken },
+      } = JSON.parse(loginOther.payload);
+
+      // Add new comment by testUser
+      const responseCreate = await server.inject({
+        method: "POST",
+        url: `/threads/${threadId}/comments`,
+        payload: { content: "Comment for unauthorized delete" },
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const targetCommentId = JSON.parse(responseCreate.payload).data
+        .addedComment.id;
+
+      // Try deleting using another user token
+      const response = await server.inject({
+        method: "DELETE",
+        url: `/threads/${threadId}/comments/${targetCommentId}`,
+        headers: { Authorization: `Bearer ${otherToken}` },
+      });
+
+      const responseJson = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(403);
+      expect(responseJson.status).toEqual("fail");
+      expect(responseJson.message).toBeDefined();
+    });
+
+    it("should respond 401 when no authentication is provided", async () => {
+      const response = await server.inject({
+        method: "DELETE",
+        url: `/threads/${threadId}/comments/${commentId}`,
+      });
+
       expect(response.statusCode).toEqual(401);
     });
   });
