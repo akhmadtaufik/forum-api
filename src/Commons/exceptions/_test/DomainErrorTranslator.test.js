@@ -64,6 +64,46 @@ describe("DomainErrorTranslator", () => {
       )
     ).toStrictEqual(new InvariantError("content harus berupa string"));
 
+    // ThreadDetail translations
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("THREAD_DETAIL.NOT_CONTAIN_NEEDED_PROPERTY")
+      )
+    ).toStrictEqual(
+      new InvariantError(
+        "tidak dapat membuat thread detail karena properti yang dibutuhkan tidak ada"
+      )
+    );
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("THREAD_DETAIL.NOT_MEET_DATA_TYPE_SPECIFICATION")
+      )
+    ).toStrictEqual(
+      new InvariantError(
+        "tidak dapat membuat thread detail karena tipe data tidak sesuai"
+      )
+    );
+
+    // CommentDetail translations
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("COMMENT_DETAIL.NOT_CONTAIN_NEEDED_PROPERTY")
+      )
+    ).toStrictEqual(
+      new InvariantError(
+        "tidak dapat membuat comment detail karena properti yang dibutuhkan tidak ada"
+      )
+    );
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("COMMENT_DETAIL.NOT_MEET_DATA_TYPE_SPECIFICATION")
+      )
+    ).toStrictEqual(
+      new InvariantError(
+        "tidak dapat membuat comment detail karena tipe data tidak sesuai"
+      )
+    );
+
     // NotFoundError translations
     expect(
       DomainErrorTranslator.translate(new Error("THREAD.NOT_FOUND"))
