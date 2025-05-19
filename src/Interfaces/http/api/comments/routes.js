@@ -1,6 +1,4 @@
-const { options } = require("@hapi/hapi/lib/cors");
-
-const rouutes = (handler) => [
+const routes = (handler) => [
   {
     method: "POST",
     path: "/threads/{threadId}/comments",
@@ -19,4 +17,4 @@ const rouutes = (handler) => [
   },
 ];
 
-module.exports = rouutes;
+module.exports = routes;
