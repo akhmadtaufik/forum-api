@@ -1,5 +1,3 @@
-const NotFoundError = require("../../Commons/exceptions/NotFoundError");
-
 class DeleteCommentUseCase {
   constructor({ commentRepository, threadRepository }) {
     this._commentRepository = commentRepository;
