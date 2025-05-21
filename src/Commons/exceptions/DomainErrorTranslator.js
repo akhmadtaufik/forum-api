@@ -68,6 +68,33 @@ DomainErrorTranslator._directories = {
   "COMMENT_DETAIL.NOT_MEET_DATA_TYPE_SPECIFICATION": new InvariantError(
     "tidak dapat membuat comment detail karena tipe data tidak sesuai"
   ),
+
+  // Reply translations
+  "NEW_REPLY.NOT_CONTAIN_NEEDED_PROPERTY": new InvariantError(
+    "harus mengirimkan content"
+  ),
+  "NEW_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION": new InvariantError(
+    "content harus berupa string"
+  ),
+  "NEW_REPLY.EMPTY_CONTENT": new InvariantError(
+    "content balasan tidak boleh kosong"
+  ),
+  "ADDED_REPLY.NOT_CONTAIN_NEEDED_PROPERTY": new InvariantError(
+    "tidak dapat membuat balasan baru karena properti yang dibutuhkan tidak ada"
+  ),
+  "ADDED_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION": new InvariantError(
+    "tidak dapat membuat balasan baru karena tipe data tidak sesuai"
+  ),
+  "REPLY_DETAIL.NOT_CONTAIN_NEEDED_PROPERTY": new InvariantError(
+    "tidak dapat membuat reply detail karena properti yang dibutuhkan tidak ada"
+  ),
+  "REPLY_DETAIL.NOT_MEET_DATA_TYPE_SPECIFICATION": new InvariantError(
+    "tidak dapat membuat reply detail karena tipe data tidak sesuai"
+  ),
+  "REPLY.NOT_FOUND": new NotFoundError("balasan tidak ditemukan"),
+  "REPLY_REPOSITORY.METHOD_NOT_IMPLEMENTED": new InvariantError(
+    "metode repository belum diimplementasikan"
+  ),
 };
 
 module.exports = DomainErrorTranslator;
