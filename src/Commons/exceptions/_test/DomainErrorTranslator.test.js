@@ -104,6 +104,67 @@ describe("DomainErrorTranslator", () => {
       )
     );
 
+    // Reply translations
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("NEW_REPLY.NOT_CONTAIN_NEEDED_PROPERTY")
+      )
+    ).toStrictEqual(new InvariantError("harus mengirimkan content"));
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("NEW_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION")
+      )
+    ).toStrictEqual(new InvariantError("content harus berupa string"));
+    expect(
+      DomainErrorTranslator.translate(new Error("NEW_REPLY.EMPTY_CONTENT"))
+    ).toStrictEqual(new InvariantError("content balasan tidak boleh kosong"));
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("ADDED_REPLY.NOT_CONTAIN_NEEDED_PROPERTY")
+      )
+    ).toStrictEqual(
+      new InvariantError(
+        "tidak dapat membuat balasan baru karena properti yang dibutuhkan tidak ada"
+      )
+    );
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("ADDED_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION")
+      )
+    ).toStrictEqual(
+      new InvariantError(
+        "tidak dapat membuat balasan baru karena tipe data tidak sesuai"
+      )
+    );
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("REPLY_DETAIL.NOT_CONTAIN_NEEDED_PROPERTY")
+      )
+    ).toStrictEqual(
+      new InvariantError(
+        "tidak dapat membuat reply detail karena properti yang dibutuhkan tidak ada"
+      )
+    );
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("REPLY_DETAIL.NOT_MEET_DATA_TYPE_SPECIFICATION")
+      )
+    ).toStrictEqual(
+      new InvariantError(
+        "tidak dapat membuat reply detail karena tipe data tidak sesuai"
+      )
+    );
+    expect(
+      DomainErrorTranslator.translate(new Error("REPLY.NOT_FOUND"))
+    ).toStrictEqual(new NotFoundError("balasan tidak ditemukan"));
+    expect(
+      DomainErrorTranslator.translate(
+        new Error("REPLY_REPOSITORY.METHOD_NOT_IMPLEMENTED")
+      )
+    ).toStrictEqual(
+      new InvariantError("metode repository belum diimplementasikan")
+    );
+
     // NotFoundError translations
     expect(
       DomainErrorTranslator.translate(new Error("THREAD.NOT_FOUND"))
