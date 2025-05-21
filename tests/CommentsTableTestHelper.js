@@ -10,7 +10,7 @@ const CommentsTableTestHelper = {
     isDeleted = false,
   }) {
     const query = {
-      text: "INSERT INTO comments VALUES($1, $2, $3, $4, $5, $6)",
+      text: "INSERT INTO comments(id, content, owner, thread_id, date, is_deleted) VALUES($1, $2, $3, $4, $5, $6)",
       values: [id, content, owner, threadId, date, isDeleted],
     };
 
