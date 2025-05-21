@@ -8,19 +8,37 @@ class GetThreadDetailUseCase {
   }
 
   async execute(threadId) {
+    // Get thread and comments data from repositories
     const thread = await this._threadRepository.getThreadById(threadId);
     const comments = await this._commentRepository.getCommentsByThreadId(
       threadId
     );
 
-    const CommentDetails = comments.map(
-      (comment) => new CommentDetail(comment)
-    );
+    const commentsList = Array.isArray(comments) ? comments : [];
 
-    return new ThreadDetail({
-      ...thread,
-      comments: CommentDetails,
+    // Create CommentDetail instances for each comment
+    const commentDetails = commentsList.map((comment) => {
+      console.log("Comment from repository:", comment);
+      return new CommentDetail({
+        id: comment.id,
+        username: comment.username,
+        date: comment.date,
+        content: comment.content,
+        isDeleted: comment.is_deleted,
+      });
     });
+
+    // Create and return ThreadDetail with all required properties
+    const threadDetail = new ThreadDetail({
+      id: thread.id,
+      title: thread.title,
+      body: thread.body,
+      date: thread.date,
+      username: thread.username,
+      comments: commentDetails,
+    });
+
+    return threadDetail;
   }
 }
 
