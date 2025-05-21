@@ -17,29 +17,41 @@ describe("GetThreadDetailUseCase", () => {
       title: "sebuah thread",
       body: "sebuah body thread",
       date: "2025-05-19T07:19:09.775Z",
-      username: "user-123",
+      username: "dicoding",
     };
 
     const expectedComments = [
       {
         id: "comment-123",
-        username: "user-123",
-        date: "2025-05-19T07:19:09.775Z",
+        username: "dicoding",
+        date: "2025-05-19T07:22:33.555Z",
         content: "sebuah comment",
-        isDeleted: false,
+        is_deleted: false,
       },
       {
         id: "comment-456",
         username: "johndoe",
-        date: "2025-05-19T07:19:09.775Z",
+        date: "2025-05-19T07:26:21.338Z",
         content: "komentar yang telah dihapus",
-        isDeleted: true,
+        is_deleted: true,
       },
     ];
 
+    // Create expected CommentDetail instances with proper masking
+    const expectedCommentDetails = expectedComments.map(
+      (comment) =>
+        new CommentDetail({
+          id: comment.id,
+          username: comment.username,
+          date: comment.date,
+          content: comment.content,
+          isDeleted: comment.is_deleted,
+        })
+    );
+
     const expectedThreadDetail = new ThreadDetail({
       ...expectedThread,
-      comments: expectedComments.map((comment) => new CommentDetail(comment)),
+      comments: expectedCommentDetails,
     });
 
     /** creating dependency of use case */
