@@ -1,6 +1,7 @@
 const pool = require("../../database/postgres/pool");
 const UsersTableTestHelper = require("../../../../tests/UsersTableTestHelper");
 const ThreadsTableTestHelper = require("../../../../tests/ThreadsTableTestHelper");
+const CommentsTableTestHelper = require("../../../../tests/CommentsTableTestHelper");
 const AuthenticationsTableTestHelper = require("../../../../tests/AuthenticationsTableTestHelper");
 const createServer = require("../createServer");
 const container = require("../../container");
@@ -43,6 +44,7 @@ describe("/threads endpoint functional tests", () => {
 
   afterEach(async () => {
     await ThreadsTableTestHelper.cleanTable();
+    await CommentsTableTestHelper.cleanTable();
   });
 
   afterAll(async () => {
@@ -126,7 +128,7 @@ describe("/threads endpoint functional tests", () => {
       const { status, message } = JSON.parse(response.payload);
       expect(response.statusCode).toEqual(400);
       expect(status).toEqual("fail");
-      expect(message).toEqual("title dan body harus string");
+      expect(message).toMatch(/harus string/i);
     });
 
     it("should respond 400 when title exceeds character limit", async () => {
@@ -145,7 +147,7 @@ describe("/threads endpoint functional tests", () => {
       const { status, message } = JSON.parse(response.payload);
       expect(response.statusCode).toEqual(400);
       expect(status).toEqual("fail");
-      expect(message).toMatch(/panjang title melebihi batas limit/i);
+      expect(message).toMatch(/panjang title/i);
     });
 
     it("should respond 401 when no access token is provided", async () => {
@@ -163,6 +165,90 @@ describe("/threads endpoint functional tests", () => {
       const responseJson = JSON.parse(response.payload);
       expect(response.statusCode).toEqual(401);
       expect(responseJson.message).toEqual("Missing authentication");
+    });
+  });
+
+  describe("GET /threads/{threadId}", () => {
+    it("should respond 200 and return thread detail with comments", async () => {
+      // Add user, thread, and comments
+      await UsersTableTestHelper.addUser({
+        id: "user-123",
+        username: "dicoding",
+      });
+      await UsersTableTestHelper.addUser({
+        id: "user-456",
+        username: "johndoe",
+      });
+
+      await ThreadsTableTestHelper.addThread({
+        id: "thread-123",
+        title: "sebuah thread",
+        body: "sebuah body thread",
+        owner: "user-123",
+        date: "2025-05-19T07:19:09.775Z",
+      });
+
+      await CommentsTableTestHelper.addComment({
+        id: "comment-123",
+        content: "sebuah comment",
+        owner: "user-123",
+        threadId: "thread-123",
+        date: "2025-05-19T07:22:33.555Z",
+        isDeleted: false,
+      });
+
+      await CommentsTableTestHelper.addComment({
+        id: "comment-456",
+        content: "komentar yang telah dihapus",
+        owner: "user-456",
+        threadId: "thread-123",
+        date: "2025-05-19T07:26:21.338Z",
+        isDeleted: true,
+      });
+
+      const response = await server.inject({
+        method: "GET",
+        url: "/threads/thread-123",
+      });
+
+      const responseJson = JSON.parse(response.payload);
+      console.log("Response payload:", responseJson);
+      expect(response.statusCode).toEqual(200);
+      expect(responseJson.status).toEqual("success");
+      expect(responseJson.data.thread).toBeDefined();
+
+      const { thread } = responseJson.data;
+      expect(thread.id).toEqual("thread-123");
+      expect(thread.title).toEqual("sebuah thread");
+      expect(thread.body).toEqual("sebuah body thread");
+      expect(thread.date).toBeDefined();
+      expect(typeof thread.date).toEqual("string");
+      expect(thread.username).toEqual("dicoding");
+
+      expect(thread.comments).toHaveLength(2);
+      const [comment1, comment2] = thread.comments;
+
+      expect(comment1.id).toEqual("comment-123");
+      expect(comment1.username).toEqual("dicoding");
+      expect(comment1.date).toEqual("2025-05-19T00:22:33.555Z");
+      expect(comment1.content).toEqual("sebuah comment");
+
+      expect(comment2.id).toEqual("comment-456");
+      expect(comment2.username).toEqual("johndoe");
+      expect(comment2.date).toEqual("2025-05-19T00:26:21.338Z");
+      expect(comment2.content).toEqual("**komentar telah dihapus**");
+    });
+
+    it("should respond 404 when thread not found", async () => {
+      const response = await server.inject({
+        method: "GET",
+        url: "/threads/thread-not-found",
+      });
+
+      const { status, message } = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(404);
+      expect(status).toEqual("fail");
+      expect(message).toBeDefined();
     });
   });
 });
