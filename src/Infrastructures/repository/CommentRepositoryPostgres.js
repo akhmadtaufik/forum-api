@@ -17,7 +17,7 @@ class CommentRepositoryPostgres extends CommentRepository {
     const isDeleted = false;
 
     const query = {
-      text: "INSERT INTO comments VALUES($1, $2, $3, $4, $5, $6) RETURNING id, content, owner",
+      text: "INSERT INTO comments(id, content, owner, thread_id, date, is_deleted) VALUES($1, $2, $3, $4, $5, $6) RETURNING id, content, owner",
       values: [id, content, owner, threadId, date, isDeleted],
     };
     const result = await this._pool.query(query);
@@ -70,10 +70,7 @@ class CommentRepositoryPostgres extends CommentRepository {
     };
 
     const result = await this._pool.query(query);
-    return result.rows.map((row) => ({
-      ...row,
-      content: row.is_deleted ? "**komentar telah dihapus**" : row.content,
-    }));
+    return result.rows;
   }
 }
 
