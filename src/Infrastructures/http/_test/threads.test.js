@@ -2,6 +2,7 @@ const pool = require("../../database/postgres/pool");
 const UsersTableTestHelper = require("../../../../tests/UsersTableTestHelper");
 const ThreadsTableTestHelper = require("../../../../tests/ThreadsTableTestHelper");
 const CommentsTableTestHelper = require("../../../../tests/CommentsTableTestHelper");
+const RepliesTableTestHelper = require("../../../../tests/RepliesTableTestHelper"); // Import RepliesTableTestHelper
 const AuthenticationsTableTestHelper = require("../../../../tests/AuthenticationsTableTestHelper");
 const createServer = require("../createServer");
 const container = require("../../container");
@@ -43,8 +44,9 @@ describe("/threads endpoint functional tests", () => {
   });
 
   afterEach(async () => {
-    await ThreadsTableTestHelper.cleanTable();
+    await RepliesTableTestHelper.cleanTable(); // Clean replies
     await CommentsTableTestHelper.cleanTable();
+    await ThreadsTableTestHelper.cleanTable();
   });
 
   afterAll(async () => {
@@ -191,7 +193,7 @@ describe("/threads endpoint functional tests", () => {
       await CommentsTableTestHelper.addComment({
         id: "comment-123",
         content: "sebuah comment",
-        owner: "user-123",
+        owner: "user-123", // dicoding
         threadId: "thread-123",
         date: "2025-05-19T07:22:33.555Z",
         isDeleted: false,
@@ -199,10 +201,29 @@ describe("/threads endpoint functional tests", () => {
 
       await CommentsTableTestHelper.addComment({
         id: "comment-456",
-        content: "komentar yang telah dihapus",
-        owner: "user-456",
+        content: "komentar yang akan dihapus",
+        owner: "user-456", // johndoe
         threadId: "thread-123",
         date: "2025-05-19T07:26:21.338Z",
+        isDeleted: true,
+      });
+
+      // Add replies
+      await RepliesTableTestHelper.addReply({
+        id: "reply-123",
+        content: "balasan pertama untuk comment-123",
+        owner: "user-456", // johndoe
+        commentId: "comment-123",
+        date: "2025-05-19T07:30:00.000Z",
+        isDeleted: false,
+      });
+
+      await RepliesTableTestHelper.addReply({
+        id: "reply-456",
+        content: "balasan kedua untuk comment-123 (dihapus)",
+        owner: "user-123", // dicoding
+        commentId: "comment-123",
+        date: "2025-05-19T07:32:00.000Z",
         isDeleted: true,
       });
 
@@ -212,7 +233,6 @@ describe("/threads endpoint functional tests", () => {
       });
 
       const responseJson = JSON.parse(response.payload);
-      console.log("Response payload:", responseJson);
       expect(response.statusCode).toEqual(200);
       expect(responseJson.status).toEqual("success");
       expect(responseJson.data.thread).toBeDefined();
@@ -221,22 +241,38 @@ describe("/threads endpoint functional tests", () => {
       expect(thread.id).toEqual("thread-123");
       expect(thread.title).toEqual("sebuah thread");
       expect(thread.body).toEqual("sebuah body thread");
-      expect(thread.date).toBeDefined();
-      expect(typeof thread.date).toEqual("string");
+      expect(thread.date).toEqual("2025-05-19T00:19:09.775Z"); // Adjusted to UTC
       expect(thread.username).toEqual("dicoding");
 
       expect(thread.comments).toHaveLength(2);
       const [comment1, comment2] = thread.comments;
 
+      // Comment 1 assertions
       expect(comment1.id).toEqual("comment-123");
       expect(comment1.username).toEqual("dicoding");
-      expect(comment1.date).toEqual("2025-05-19T00:22:33.555Z");
+      expect(comment1.date).toEqual("2025-05-19T00:22:33.555Z"); // Adjusted to UTC
       expect(comment1.content).toEqual("sebuah comment");
+      expect(comment1.replies).toHaveLength(2);
 
+      const [reply1_comment1, reply2_comment1] = comment1.replies;
+      expect(reply1_comment1.id).toEqual("reply-123");
+      expect(reply1_comment1.username).toEqual("johndoe");
+      expect(reply1_comment1.date).toEqual("2025-05-19T00:30:00.000Z"); // Adjusted to UTC
+      expect(reply1_comment1.content).toEqual(
+        "balasan pertama untuk comment-123"
+      );
+
+      expect(reply2_comment1.id).toEqual("reply-456");
+      expect(reply2_comment1.username).toEqual("dicoding");
+      expect(reply2_comment1.date).toEqual("2025-05-19T00:32:00.000Z"); // Adjusted to UTC
+      expect(reply2_comment1.content).toEqual("**balasan telah dihapus**");
+
+      // Comment 2 assertions
       expect(comment2.id).toEqual("comment-456");
       expect(comment2.username).toEqual("johndoe");
-      expect(comment2.date).toEqual("2025-05-19T00:26:21.338Z");
+      expect(comment2.date).toEqual("2025-05-19T00:26:21.338Z"); // Adjusted to UTC
       expect(comment2.content).toEqual("**komentar telah dihapus**");
+      expect(comment2.replies).toEqual([]); // No replies for this comment
     });
 
     it("should respond 404 when thread not found", async () => {
