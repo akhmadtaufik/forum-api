@@ -28,9 +28,10 @@ describe("CommentRepositoryPostgres", () => {
         owner: "user-123",
       });
 
-      const newComment = {
+      const newCommentEntity = new NewComment({
+        // Create NewComment instance
         content: "Comment content",
-      };
+      });
       const fakeIdGenerator = () => "123";
       const commentRepositoryPostgres = new CommentRepositoryPostgres(
         pool,
@@ -39,7 +40,7 @@ describe("CommentRepositoryPostgres", () => {
 
       // Action
       const addedComment = await commentRepositoryPostgres.addComment(
-        newComment,
+        newCommentEntity,
         "thread-123",
         "user-123"
       );
@@ -50,7 +51,7 @@ describe("CommentRepositoryPostgres", () => {
       );
       expect(comments).toHaveLength(1);
       expect(addedComment.id).toEqual("comment-123");
-      expect(addedComment.content).toEqual(newComment.content);
+      expect(addedComment.content).toEqual(newCommentEntity.content);
       expect(addedComment.owner).toEqual("user-123");
     });
   });
