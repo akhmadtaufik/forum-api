@@ -36,21 +36,32 @@ describe("DeleteReplyUseCase", () => {
     await deleteReplyUseCase.execute(owner, threadId, commentId, replyId);
 
     // Assert
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledTimes(1);
     expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
       threadId
     );
+
+    expect(
+      mockCommentRepository.verifyCommentExistsInThread
+    ).toHaveBeenCalledTimes(1);
     expect(
       mockCommentRepository.verifyCommentExistsInThread
     ).toHaveBeenCalledWith(commentId, threadId);
+
+    expect(mockReplyRepository.verifyReplyExists).toHaveBeenCalledTimes(1);
     expect(mockReplyRepository.verifyReplyExists).toHaveBeenCalledWith(
       replyId,
       commentId,
       threadId
     );
+
+    expect(mockReplyRepository.verifyReplyAccess).toHaveBeenCalledTimes(1);
     expect(mockReplyRepository.verifyReplyAccess).toHaveBeenCalledWith(
       replyId,
       owner
     );
+
+    expect(mockReplyRepository.deleteReplyById).toHaveBeenCalledTimes(1);
     expect(mockReplyRepository.deleteReplyById).toHaveBeenCalledWith(replyId);
   });
 
@@ -84,6 +95,27 @@ describe("DeleteReplyUseCase", () => {
     await expect(
       deleteReplyUseCase.execute(owner, threadId, commentId, replyId)
     ).rejects.toThrow("AUTHORIZATION_ERROR");
+
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledTimes(1);
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
+      threadId
+    );
+
+    expect(
+      mockCommentRepository.verifyCommentExistsInThread
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      mockCommentRepository.verifyCommentExistsInThread
+    ).toHaveBeenCalledWith(commentId, threadId);
+
+    expect(mockReplyRepository.verifyReplyExists).toHaveBeenCalledTimes(1);
+    expect(mockReplyRepository.verifyReplyExists).toHaveBeenCalledWith(
+      replyId,
+      commentId,
+      threadId
+    );
+
+    expect(mockReplyRepository.verifyReplyAccess).toHaveBeenCalledTimes(1);
     expect(mockReplyRepository.verifyReplyAccess).toHaveBeenCalledWith(
       replyId,
       owner
