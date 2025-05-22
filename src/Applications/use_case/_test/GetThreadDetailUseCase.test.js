@@ -10,153 +10,164 @@ const NotFoundError = require("../../../Commons/exceptions/NotFoundError");
 describe("GetThreadDetailUseCase", () => {
   it("should orchestrating the get thread detail action correctly", async () => {
     // Arrange
-    const useCasePayload = {
-      threadId: "thread-123",
+    const useCaseThreadId = "thread-xyz";
+
+    // 1. Raw data returned by mocks
+    const mockRawThreadData = {
+      id: useCaseThreadId,
+      title: "Mock Thread Title from Repo",
+      body: "Mock thread body from Repo",
+      date: new Date("2025-05-22T10:00:00.000Z"),
+      username: "repoUser",
     };
 
-    const expectedThread = {
-      id: "thread-123",
-      title: "sebuah thread",
-      body: "sebuah body thread",
-      date: "2025-05-19T07:19:09.775Z",
-      username: "dicoding",
-    };
-
-    const expectedComments = [
+    const mockRawCommentsData = [
       {
-        id: "comment-123",
-        username: "dicoding",
-        date: "2025-05-19T07:22:33.555Z",
-        content: "sebuah comment",
+        id: "comment-repo-1",
+        username: "commenterRepo1",
+        date: new Date("2025-05-22T10:05:00.000Z"),
+        content: "Raw comment 1 content from repo",
         is_deleted: false,
       },
       {
-        id: "comment-456",
-        username: "johndoe",
-        date: "2025-05-19T07:26:21.338Z",
-        content: "komentar yang telah dihapus",
+        id: "comment-repo-2",
+        username: "commenterRepo2",
+        date: new Date("2025-05-22T10:10:00.000Z"),
+        content: "Raw comment 2 content (deleted) from repo",
         is_deleted: true,
       },
     ];
 
-    const expectedReplies = [
+    const mockRawRepliesData = [
       {
-        id: "reply-123",
-        comment_id: "comment-123", // Belongs to the first comment
-        username: "johndoe",
-        date: "2025-05-19T07:23:00.000Z",
-        content: "sebuah balasan",
+        id: "reply-repo-A",
+        comment_id: "comment-repo-1",
+        username: "replierRepoA",
+        date: new Date("2025-05-22T10:06:00.000Z"),
+        content: "Raw reply A to comment 1 from repo",
         is_deleted: false,
       },
       {
-        id: "reply-456",
-        comment_id: "comment-123", // Belongs to the first comment
-        username: "dicoding",
-        date: "2025-05-19T07:24:00.000Z",
-        content: "balasan yang dihapus",
+        id: "reply-repo-B",
+        comment_id: "comment-repo-1",
+        username: "replierRepoB",
+        date: new Date("2025-05-22T10:07:00.000Z"),
+        content: "Raw reply B to comment 1 (deleted) from repo",
         is_deleted: true,
       },
-      // No replies for comment-456 in this example
     ];
 
-    // Create expected CommentDetail instances with proper masking and replies
-    const expectedCommentDetails = expectedComments.map((comment) => {
-      const commentRepliesData = expectedReplies
-        .filter((reply) => reply.comment_id === comment.id)
+    // 2. Construct the truly expected ThreadDetail based on how the use case should process the mockRawData
+    const expectedProcessedComments = mockRawCommentsData.map((rawComment) => {
+      const processedReplies = mockRawRepliesData
+        .filter((rawReply) => rawReply.comment_id === rawComment.id)
         .map(
-          (reply) =>
+          (rawReply) =>
             new ReplyDetail({
-              id: reply.id,
-              content: reply.content,
-              date: reply.date,
-              username: reply.username,
-              isDeleted: reply.is_deleted, // Pass is_deleted to ReplyDetail
+              id: rawReply.id,
+              content: rawReply.content,
+              date: rawReply.date,
+              username: rawReply.username,
+              isDeleted: rawReply.is_deleted,
             })
         );
       return new CommentDetail({
-        id: comment.id,
-        username: comment.username,
-        date: comment.date,
-        content: comment.content, // Content from raw comment
-        isDeleted: comment.is_deleted, // Pass is_deleted to CommentDetail
-        replies: commentRepliesData,
+        id: rawComment.id,
+        username: rawComment.username,
+        date: rawComment.date,
+        content: rawComment.content,
+        isDeleted: rawComment.is_deleted,
+        replies: processedReplies,
       });
     });
 
     const expectedThreadDetail = new ThreadDetail({
-      ...expectedThread,
-      comments: expectedCommentDetails,
+      id: mockRawThreadData.id,
+      title: mockRawThreadData.title,
+      body: mockRawThreadData.body,
+      date: mockRawThreadData.date,
+      username: mockRawThreadData.username,
+      comments: expectedProcessedComments,
     });
 
     /** creating dependency of use case */
     const mockThreadRepository = new ThreadRepository();
     const mockCommentRepository = new CommentRepository();
-    const mockReplyRepository = new ReplyRepository(); // Create mock ReplyRepository
+    const mockReplyRepository = new ReplyRepository();
 
     /** mocking needed function */
-    mockThreadRepository.verifyThreadExists = jest // Mock verifyThreadExists
+    mockThreadRepository.verifyThreadExists = jest
       .fn()
-      .mockImplementation(() => Promise.resolve());
+      .mockResolvedValue(undefined);
     mockThreadRepository.getThreadById = jest
       .fn()
-      .mockImplementation(() => Promise.resolve(expectedThread));
+      .mockResolvedValue(mockRawThreadData);
     mockCommentRepository.getCommentsByThreadId = jest
       .fn()
-      .mockImplementation(() => Promise.resolve(expectedComments));
-    mockReplyRepository.getRepliesByCommentIds = jest // Mock getRepliesByCommentIds
+      .mockResolvedValue(mockRawCommentsData);
+    mockReplyRepository.getRepliesByCommentIds = jest
       .fn()
-      .mockImplementation(() => Promise.resolve(expectedReplies));
+      .mockResolvedValue(mockRawRepliesData);
 
     /** creating use case instance */
     const getThreadDetailUseCase = new GetThreadDetailUseCase({
       threadRepository: mockThreadRepository,
       commentRepository: mockCommentRepository,
-      replyRepository: mockReplyRepository, // Inject mockReplyRepository
+      replyRepository: mockReplyRepository,
     });
 
     // Action
-    const threadDetail = await getThreadDetailUseCase.execute(
-      useCasePayload.threadId
+    const actualThreadDetail = await getThreadDetailUseCase.execute(
+      useCaseThreadId
     );
 
     // Assert
-    expect(threadDetail).toStrictEqual(expectedThreadDetail);
-    expect(mockThreadRepository.verifyThreadExists).toBeCalledWith(
-      useCasePayload.threadId
+    // 3. Assert that the actual result from the use case matches the independently constructed expectedThreadDetail
+    expect(actualThreadDetail).toStrictEqual(expectedThreadDetail);
+
+    // 4. Verify all mock interactions
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledTimes(1);
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
+      useCaseThreadId
     );
-    expect(mockThreadRepository.getThreadById).toBeCalledWith(
-      useCasePayload.threadId
+
+    expect(mockThreadRepository.getThreadById).toHaveBeenCalledTimes(1);
+    expect(mockThreadRepository.getThreadById).toHaveBeenCalledWith(
+      useCaseThreadId
     );
-    expect(mockCommentRepository.getCommentsByThreadId).toBeCalledWith(
-      useCasePayload.threadId
+
+    expect(mockCommentRepository.getCommentsByThreadId).toHaveBeenCalledTimes(
+      1
     );
-    // Assert that getRepliesByCommentIds is called with the IDs of comments that are not deleted.
-    // Or simply with all comment IDs if the use case logic fetches for all.
-    // Current use case fetches for all comments initially.
-    const expectedCommentIds = expectedComments.map((comment) => comment.id);
-    expect(mockReplyRepository.getRepliesByCommentIds).toBeCalledWith(
-      expectedCommentIds
+    expect(mockCommentRepository.getCommentsByThreadId).toHaveBeenCalledWith(
+      useCaseThreadId
+    );
+
+    const expectedCommentIdsForRepoCall = mockRawCommentsData.map(
+      (comment) => comment.id
+    );
+    expect(mockReplyRepository.getRepliesByCommentIds).toHaveBeenCalledTimes(1);
+    expect(mockReplyRepository.getRepliesByCommentIds).toHaveBeenCalledWith(
+      expectedCommentIdsForRepoCall
     );
   });
 
   it("should orchestrating the get thread detail action correctly when no comments exist", async () => {
     // Arrange
-    const useCasePayload = {
-      threadId: "thread-123",
+    const useCaseThreadId = "thread-no-comments";
+
+    const mockRawThreadData = {
+      id: useCaseThreadId,
+      title: "Mock Thread No Comments",
+      body: "Mock body no comments",
+      date: new Date("2025-05-22T11:00:00.000Z"),
+      username: "testUserNoComments",
     };
+    const mockRawCommentsDataEmpty = []; // No comments
 
-    const expectedThread = {
-      id: "thread-123",
-      title: "sebuah thread",
-      body: "sebuah body thread",
-      date: "2025-05-19T07:19:09.775Z",
-      username: "dicoding",
-    };
-
-    const expectedComments = []; // No comments
-
-    const expectedThreadDetail = new ThreadDetail({
-      ...expectedThread,
+    // Construct expected ThreadDetail
+    const expectedThreadDetailWithNoComments = new ThreadDetail({
+      ...mockRawThreadData,
       comments: [], // Expect empty array for comments
     });
 
@@ -169,14 +180,11 @@ describe("GetThreadDetailUseCase", () => {
       .mockResolvedValue(undefined);
     mockThreadRepository.getThreadById = jest
       .fn()
-      .mockResolvedValue(expectedThread);
+      .mockResolvedValue(mockRawThreadData);
     mockCommentRepository.getCommentsByThreadId = jest
       .fn()
-      .mockResolvedValue(expectedComments);
-    // getRepliesByCommentIds should not be called if there are no comments
-    mockReplyRepository.getRepliesByCommentIds = jest
-      .fn()
-      .mockResolvedValue([]);
+      .mockResolvedValue(mockRawCommentsDataEmpty);
+    mockReplyRepository.getRepliesByCommentIds = jest.fn();
 
     const getThreadDetailUseCase = new GetThreadDetailUseCase({
       threadRepository: mockThreadRepository,
@@ -185,22 +193,24 @@ describe("GetThreadDetailUseCase", () => {
     });
 
     // Action
-    const threadDetail = await getThreadDetailUseCase.execute(
-      useCasePayload.threadId
+    const actualThreadDetail = await getThreadDetailUseCase.execute(
+      useCaseThreadId
     );
 
     // Assert
-    expect(threadDetail).toStrictEqual(expectedThreadDetail);
-    expect(mockThreadRepository.verifyThreadExists).toBeCalledWith(
-      useCasePayload.threadId
+    expect(actualThreadDetail).toStrictEqual(
+      expectedThreadDetailWithNoComments
     );
-    expect(mockThreadRepository.getThreadById).toBeCalledWith(
-      useCasePayload.threadId
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
+      useCaseThreadId
     );
-    expect(mockCommentRepository.getCommentsByThreadId).toBeCalledWith(
-      useCasePayload.threadId
+    expect(mockThreadRepository.getThreadById).toHaveBeenCalledWith(
+      useCaseThreadId
     );
-    expect(mockReplyRepository.getRepliesByCommentIds).not.toBeCalled();
+    expect(mockCommentRepository.getCommentsByThreadId).toHaveBeenCalledWith(
+      useCaseThreadId
+    );
+    expect(mockReplyRepository.getRepliesByCommentIds).not.toHaveBeenCalled();
   });
 
   it("should throw NotFoundError when thread does not exist", async () => {
@@ -212,7 +222,7 @@ describe("GetThreadDetailUseCase", () => {
     /** creating dependency of use case */
     const mockThreadRepository = new ThreadRepository();
     const mockCommentRepository = new CommentRepository();
-    const mockReplyRepository = new ReplyRepository(); // Add mockReplyRepository
+    const mockReplyRepository = new ReplyRepository();
 
     /** mocking needed function */
     mockThreadRepository.verifyThreadExists = jest // Mock verifyThreadExists to reject
@@ -227,7 +237,7 @@ describe("GetThreadDetailUseCase", () => {
     const getThreadDetailUseCase = new GetThreadDetailUseCase({
       threadRepository: mockThreadRepository,
       commentRepository: mockCommentRepository,
-      replyRepository: mockReplyRepository, // Inject mockReplyRepository
+      replyRepository: mockReplyRepository,
     });
 
     // Action & Assert
