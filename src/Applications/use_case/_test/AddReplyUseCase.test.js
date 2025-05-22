@@ -15,8 +15,15 @@ describe("AddReplyUseCase", () => {
     const threadId = "thread-123";
     const commentId = "comment-123";
 
-    const mockAddedReply = new AddedReply({
-      id: "reply-123",
+    // AddReplyUseCase directly returns the result of replyRepository.addReply.
+    const expectedAddedReply = new AddedReply({
+      id: "reply-xyz789",
+      content: useCasePayload.content,
+      owner,
+    });
+
+    const mockRepositoryResponse = new AddedReply({
+      id: "reply-xyz789",
       content: useCasePayload.content,
       owner,
     });
@@ -28,12 +35,12 @@ describe("AddReplyUseCase", () => {
 
     /** mocking needed function */
     mockThreadRepository.verifyThreadExists = jest.fn(() => Promise.resolve());
-    mockCommentRepository.verifyCommentExistsInThread = jest.fn(() =>
-      Promise.resolve()
-    );
-    mockReplyRepository.addReply = jest.fn(() =>
-      Promise.resolve(mockAddedReply)
-    );
+    mockCommentRepository.verifyCommentExistsInThread = jest
+      .fn()
+      .mockResolvedValue(undefined);
+    mockReplyRepository.addReply = jest
+      .fn()
+      .mockImplementation(() => Promise.resolve(mockRepositoryResponse));
 
     /** creating use case instance */
     const addReplyUseCase = new AddReplyUseCase({
@@ -51,18 +58,29 @@ describe("AddReplyUseCase", () => {
     );
 
     // Assert
-    expect(addedReply).toStrictEqual(mockAddedReply);
+    expect(addedReply).toStrictEqual(expectedAddedReply);
+
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledTimes(1);
     expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
       threadId
     );
+
+    expect(
+      mockCommentRepository.verifyCommentExistsInThread
+    ).toHaveBeenCalledTimes(1);
     expect(
       mockCommentRepository.verifyCommentExistsInThread
     ).toHaveBeenCalledWith(commentId, threadId);
+
+    expect(mockReplyRepository.addReply).toHaveBeenCalledTimes(1);
     expect(mockReplyRepository.addReply).toHaveBeenCalledWith(
-      new NewReply({ content: useCasePayload.content }),
+      expect.any(NewReply), // Use expect.any or a specific NewReply instance
       commentId,
       owner
     );
+
+    const newReplyArgument = mockReplyRepository.addReply.mock.calls[0][0];
+    expect(newReplyArgument.content).toEqual(useCasePayload.content);
   });
 
   it("should throw error if thread does not exist", async () => {
@@ -90,6 +108,7 @@ describe("AddReplyUseCase", () => {
     await expect(
       addReplyUseCase.execute(useCasePayload, owner, threadId, commentId)
     ).rejects.toThrow("THREAD_NOT_FOUND");
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledTimes(1);
     expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
       threadId
     );
@@ -121,9 +140,13 @@ describe("AddReplyUseCase", () => {
     await expect(
       addReplyUseCase.execute(useCasePayload, owner, threadId, commentId)
     ).rejects.toThrow("COMMENT_NOT_FOUND");
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledTimes(1);
     expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
       threadId
     );
+    expect(
+      mockCommentRepository.verifyCommentExistsInThread
+    ).toHaveBeenCalledTimes(1);
     expect(
       mockCommentRepository.verifyCommentExistsInThread
     ).toHaveBeenCalledWith(commentId, threadId);
