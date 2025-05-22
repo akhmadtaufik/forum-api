@@ -26,7 +26,7 @@ class ReplyDetail {
     if (
       typeof id !== "string" ||
       typeof username !== "string" ||
-      typeof date !== "string" ||
+      (typeof date !== "string" && !(date instanceof Date)) || // Allow Date object
       typeof content !== "string" ||
       typeof isDeleted !== "boolean"
     ) {
