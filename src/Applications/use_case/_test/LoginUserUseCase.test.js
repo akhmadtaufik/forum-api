@@ -1,39 +1,46 @@
-const UserRepository = require('../../../Domains/users/UserRepository');
-const AuthenticationRepository = require('../../../Domains/authentications/AuthenticationRepository');
-const AuthenticationTokenManager = require('../../security/AuthenticationTokenManager');
-const PasswordHash = require('../../security/PasswordHash');
-const LoginUserUseCase = require('../LoginUserUseCase');
-const NewAuth = require('../../../Domains/authentications/entities/NewAuth');
+const UserRepository = require("../../../Domains/users/UserRepository");
+const AuthenticationRepository = require("../../../Domains/authentications/AuthenticationRepository");
+const AuthenticationTokenManager = require("../../security/AuthenticationTokenManager");
+const PasswordHash = require("../../security/PasswordHash");
+const LoginUserUseCase = require("../LoginUserUseCase");
+const NewAuth = require("../../../Domains/authentications/entities/NewAuth");
 
-describe('GetAuthenticationUseCase', () => {
-  it('should orchestrating the get authentication action correctly', async () => {
+describe("LoginUserUseCase", () => {
+  it("should orchestrating the login action correctly", async () => {
     // Arrange
     const useCasePayload = {
-      username: 'dicoding',
-      password: 'secret',
+      username: "dicoding",
+      password: "secret",
     };
-    const mockedAuthentication = new NewAuth({
-      accessToken: 'access_token',
-      refreshToken: 'refresh_token',
-    });
+
+    // Define neutral mock return values for tokens
+    const mockAccessToken = "neutral.access.token.xyz";
+    const mockRefreshToken = "neutral.refresh.token.abc";
+    const mockUserId = "user-test-789";
+    const mockEncryptedPassword = "encrypted_password_from_repo";
+
     const mockUserRepository = new UserRepository();
     const mockAuthenticationRepository = new AuthenticationRepository();
     const mockAuthenticationTokenManager = new AuthenticationTokenManager();
     const mockPasswordHash = new PasswordHash();
 
     // Mocking
-    mockUserRepository.getPasswordByUsername = jest.fn()
-      .mockImplementation(() => Promise.resolve('encrypted_password'));
-    mockPasswordHash.comparePassword = jest.fn()
-      .mockImplementation(() => Promise.resolve());
-    mockAuthenticationTokenManager.createAccessToken = jest.fn()
-      .mockImplementation(() => Promise.resolve(mockedAuthentication.accessToken));
-    mockAuthenticationTokenManager.createRefreshToken = jest.fn()
-      .mockImplementation(() => Promise.resolve(mockedAuthentication.refreshToken));
-    mockUserRepository.getIdByUsername = jest.fn()
-      .mockImplementation(() => Promise.resolve('user-123'));
-    mockAuthenticationRepository.addToken = jest.fn()
-      .mockImplementation(() => Promise.resolve());
+    mockUserRepository.getPasswordByUsername = jest
+      .fn()
+      .mockResolvedValue(mockEncryptedPassword);
+    mockPasswordHash.comparePassword = jest.fn().mockResolvedValue(undefined); // Resolves if password matches
+    mockAuthenticationTokenManager.createAccessToken = jest
+      .fn()
+      .mockResolvedValue(mockAccessToken);
+    mockAuthenticationTokenManager.createRefreshToken = jest
+      .fn()
+      .mockResolvedValue(mockRefreshToken);
+    mockUserRepository.getIdByUsername = jest
+      .fn()
+      .mockResolvedValue(mockUserId);
+    mockAuthenticationRepository.addToken = jest
+      .fn()
+      .mockResolvedValue(undefined); // Resolves if token is added
 
     // create use case instance
     const loginUserUseCase = new LoginUserUseCase({
@@ -44,24 +51,55 @@ describe('GetAuthenticationUseCase', () => {
     });
 
     // Action
-    const actualAuthentication = await loginUserUseCase.execute(useCasePayload);
+    const actualNewAuth = await loginUserUseCase.execute(useCasePayload);
 
     // Assert
-    expect(actualAuthentication).toEqual(new NewAuth({
-      accessToken: 'access_token',
-      refreshToken: 'refresh_token',
-    }));
-    expect(mockUserRepository.getPasswordByUsername)
-      .toBeCalledWith('dicoding');
-    expect(mockPasswordHash.comparePassword)
-      .toBeCalledWith('secret', 'encrypted_password');
-    expect(mockUserRepository.getIdByUsername)
-      .toBeCalledWith('dicoding');
-    expect(mockAuthenticationTokenManager.createAccessToken)
-      .toBeCalledWith({ username: 'dicoding', id: 'user-123' });
-    expect(mockAuthenticationTokenManager.createRefreshToken)
-      .toBeCalledWith({ username: 'dicoding', id: 'user-123' });
-    expect(mockAuthenticationRepository.addToken)
-      .toBeCalledWith(mockedAuthentication.refreshToken);
+    expect(actualNewAuth).toEqual(
+      new NewAuth({
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken,
+      })
+    );
+
+    expect(mockUserRepository.getPasswordByUsername).toHaveBeenCalledTimes(1);
+    expect(mockUserRepository.getPasswordByUsername).toHaveBeenCalledWith(
+      useCasePayload.username
+    );
+
+    expect(mockPasswordHash.comparePassword).toHaveBeenCalledTimes(1);
+    expect(mockPasswordHash.comparePassword).toHaveBeenCalledWith(
+      useCasePayload.password,
+      mockEncryptedPassword
+    );
+
+    expect(mockUserRepository.getIdByUsername).toHaveBeenCalledTimes(1);
+    expect(mockUserRepository.getIdByUsername).toHaveBeenCalledWith(
+      useCasePayload.username
+    );
+
+    expect(
+      mockAuthenticationTokenManager.createAccessToken
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      mockAuthenticationTokenManager.createAccessToken
+    ).toHaveBeenCalledWith({
+      username: useCasePayload.username,
+      id: mockUserId,
+    });
+
+    expect(
+      mockAuthenticationTokenManager.createRefreshToken
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      mockAuthenticationTokenManager.createRefreshToken
+    ).toHaveBeenCalledWith({
+      username: useCasePayload.username,
+      id: mockUserId,
+    });
+
+    expect(mockAuthenticationRepository.addToken).toHaveBeenCalledTimes(1);
+    expect(mockAuthenticationRepository.addToken).toHaveBeenCalledWith(
+      mockRefreshToken
+    );
   });
 });
