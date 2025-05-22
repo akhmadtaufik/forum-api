@@ -12,12 +12,16 @@ describe("AddCommentUseCase", () => {
     const threadId = "thread-123";
     const owner = "user-123";
 
-    const mockNewComment = new NewComment({
+    // AddCommentUseCase directly returns the result of commentRepository.addComment.
+    const expectedAddedComment = {
+      id: "comment-xyz789",
       content: useCasePayload.content,
-    });
+      owner,
+    };
 
-    const mockAddedComment = {
-      id: "comment-123",
+    const mockRepositoryResponse = {
+      // This should match the structure of AddedComment
+      id: "comment-xyz789",
       content: useCasePayload.content,
       owner,
     };
@@ -27,10 +31,12 @@ describe("AddCommentUseCase", () => {
     const mockThreadRepository = new ThreadRepository();
 
     /** mocking needed function */
-    mockThreadRepository.verifyThreadExists = jest.fn(() => Promise.resolve());
+    mockThreadRepository.verifyThreadExists = jest
+      .fn()
+      .mockResolvedValue(undefined);
     mockCommentRepository.addComment = jest
       .fn()
-      .mockImplementation(() => Promise.resolve(mockAddedComment));
+      .mockImplementation(() => Promise.resolve(mockRepositoryResponse));
 
     /** creating use case instance */
     const addCommentUseCase = new AddCommentUseCase({
@@ -46,14 +52,22 @@ describe("AddCommentUseCase", () => {
     );
 
     // Assert
-    expect(addedComment).toStrictEqual(mockAddedComment);
+    expect(addedComment).toStrictEqual(expectedAddedComment);
+
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledTimes(1);
     expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
       threadId
     );
+
+    expect(mockCommentRepository.addComment).toHaveBeenCalledTimes(1);
     expect(mockCommentRepository.addComment).toHaveBeenCalledWith(
-      mockNewComment,
+      expect.any(NewComment),
       threadId,
       owner
     );
+
+    const newCommentArgument =
+      mockCommentRepository.addComment.mock.calls[0][0];
+    expect(newCommentArgument.content).toEqual(useCasePayload.content);
   });
 });
