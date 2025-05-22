@@ -12,7 +12,14 @@ describe("AddThreadUseCase", () => {
     };
     const ownerId = "user-123";
 
+    // The AddThreadUseCase directly returns the result of threadRepository.addThread.
     const expectedAddedThread = new AddedThread({
+      id: "thread-123",
+      title: useCasePayload.title,
+      owner: ownerId,
+    });
+
+    const mockRepositoryResponse = new AddedThread({
       id: "thread-123",
       title: useCasePayload.title,
       owner: ownerId,
@@ -22,9 +29,10 @@ describe("AddThreadUseCase", () => {
     const mockThreadRepository = new ThreadRepository();
 
     /** mocking needed functions */
+    // Mock addThread to return the mockRepositoryResponse
     mockThreadRepository.addThread = jest
       .fn()
-      .mockImplementation(() => Promise.resolve(expectedAddedThread));
+      .mockImplementation(() => Promise.resolve(mockRepositoryResponse));
 
     /** creating use case instance */
     const addThreadUseCase = new AddThreadUseCase({
@@ -36,18 +44,18 @@ describe("AddThreadUseCase", () => {
 
     // Assert
     expect(addedThread).toStrictEqual(expectedAddedThread);
-    // Verify that NewThread was instantiated correctly within the use case
-    // The first argument to mockThreadRepository.addThread should be an instance of NewThread
+    expect(mockThreadRepository.addThread).toHaveBeenCalledTimes(1);
+
+    // Check that it's called with an instance of NewThread and the ownerId
     expect(mockThreadRepository.addThread).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: useCasePayload.title,
-        body: useCasePayload.body,
-      }),
+      expect.any(NewThread),
       ownerId
     );
-    expect(mockThreadRepository.addThread.mock.calls[0][0]).toBeInstanceOf(
-      NewThread
-    );
-    expect(mockThreadRepository.addThread).toHaveBeenCalledTimes(1);
+
+    // Retrieve the actual NewThread instance passed to the mock for more detailed assertions
+    const newThreadInstanceArg =
+      mockThreadRepository.addThread.mock.calls[0][0];
+    expect(newThreadInstanceArg.title).toEqual(useCasePayload.title);
+    expect(newThreadInstanceArg.body).toEqual(useCasePayload.body);
   });
 });
