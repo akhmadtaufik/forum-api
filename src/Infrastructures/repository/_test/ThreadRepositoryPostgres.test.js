@@ -1,11 +1,9 @@
 const pool = require("../../database/postgres/pool");
 const UsersTableTestHelper = require("../../../../tests/UsersTableTestHelper");
 const ThreadsTableTestHelper = require("../../../../tests/ThreadsTableTestHelper");
-const CommentsTableTestHelper = require("../../../../tests/CommentsTableTestHelper");
 const NewThread = require("../../../Domains/threads/entities/NewThread");
 const AddedThread = require("../../../Domains/threads/entities/AddedThread");
 const ThreadRepositoryPostgres = require("../ThreadRepositoryPostgres");
-const CommentRepositoryPostgres = require("../CommentRepositoryPostgres");
 const NotFoundError = require("../../../Commons/exceptions/NotFoundError");
 
 describe("ThreadRepositoryPostgres integration test", () => {
@@ -85,6 +83,39 @@ describe("ThreadRepositoryPostgres integration test", () => {
         threadRepositoryPostgres.addThread(newThreadPayload, nonExistentOwnerId)
       ).rejects.toThrow(NotFoundError);
     });
+
+    it("should throw a generic Error for other database errors (e.g., unique constraint violation)", async () => {
+      // Arrange
+      const newThreadPayload = new NewThread({
+        title: "Test Title Generic Error",
+        body: "Test body generic error.",
+      });
+      // First, add a thread that will cause the ID to be "thread-generic-error-id"
+      await ThreadsTableTestHelper.addThread({
+        id: "thread-generic-error-id",
+        owner: testUserId,
+        title: "Pre-existing",
+        body: "Pre-existing",
+      });
+
+      // Configure fakeIdGenerator to produce the same ID, causing a unique constraint violation (error code 23505)
+      const fakeIdGenerator = () => "generic-error-id";
+      const threadRepositoryPostgres = new ThreadRepositoryPostgres(
+        pool,
+        fakeIdGenerator
+      );
+
+      // Action & Assert
+      await expect(
+        threadRepositoryPostgres.addThread(newThreadPayload, testUserId)
+      ).rejects.toThrowError(
+        "Failed to add a thread due to an error on the database server."
+      );
+      // We also want to ensure it's not a NotFoundError, which is for foreign key violations specifically
+      await expect(
+        threadRepositoryPostgres.addThread(newThreadPayload, testUserId)
+      ).rejects.not.toThrowError(NotFoundError);
+    });
   });
 
   describe("verifyThreadExists method", () => {
@@ -95,7 +126,7 @@ describe("ThreadRepositoryPostgres integration test", () => {
         id: existingThreadId,
         owner: testUserId,
       });
-      const threadRepositoryPostgres = new ThreadRepositoryPostgres(pool, {}); // idGenerator not needed here
+      const threadRepositoryPostgres = new ThreadRepositoryPostgres(pool, {});
 
       // Action & Assert
       await expect(
