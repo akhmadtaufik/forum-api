@@ -29,18 +29,50 @@ describe("CommentDetail entities", () => {
     expect(() => new CommentDetail(payload)).toThrowError(
       "COMMENT_DETAIL.NOT_MEET_DATA_TYPE_SPECIFICATION"
     );
+  });
 
-    // Arrange for replies not being an array
-    const payloadWithInvalidReplies = {
-      id: "comment-123",
+  it("should throw error when payload id is not a string", () => {
+    // Arrange
+    const payload = {
+      id: 123, // not a string
       username: "user123",
       date: "2025-05-19T07:22:33.555Z",
       content: "sebuah comment",
-      replies: "not-an-array",
     };
-    // Action and Assert for replies
-    expect(() => new CommentDetail(payloadWithInvalidReplies)).toThrowError(
-      "COMMENT_DETAIL.REPLIES_SHOULD_BE_ARRAY" // Corrected expected error
+
+    // Action and Assert
+    expect(() => new CommentDetail(payload)).toThrowError(
+      "COMMENT_DETAIL.NOT_MEET_DATA_TYPE_SPECIFICATION"
+    );
+  });
+
+  it("should throw error when payload username is not a string", () => {
+    // Arrange
+    const payload = {
+      id: "comment-123",
+      username: 123, // not a string
+      date: "2025-05-19T07:22:33.555Z",
+      content: "sebuah comment",
+    };
+
+    // Action and Assert
+    expect(() => new CommentDetail(payload)).toThrowError(
+      "COMMENT_DETAIL.NOT_MEET_DATA_TYPE_SPECIFICATION"
+    );
+  });
+
+  it("should throw error when payload date is not a string or Date object", () => {
+    // Arrange
+    const payload = {
+      id: "comment-123",
+      username: "user123",
+      date: 1234567890, // not a string or Date object
+      content: "sebuah comment",
+    };
+
+    // Action and Assert
+    expect(() => new CommentDetail(payload)).toThrowError(
+      "COMMENT_DETAIL.NOT_MEET_DATA_TYPE_SPECIFICATION"
     );
   });
 
@@ -55,9 +87,6 @@ describe("CommentDetail entities", () => {
     };
 
     // Action and Assert
-    // Note: Depending on the implementation, this might fall under NOT_MEET_DATA_TYPE_SPECIFICATION
-    // or a more specific error like REPLIES_SHOULD_BE_ARRAY.
-    // The current CommentDetail.js throws NOT_MEET_DATA_TYPE_SPECIFICATION for this.
     expect(() => new CommentDetail(payload)).toThrowError(
       "COMMENT_DETAIL.REPLIES_SHOULD_BE_ARRAY" // Corrected expected error
     );
