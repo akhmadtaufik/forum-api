@@ -26,6 +26,7 @@ describe("ReplyRepositoryPostgres", () => {
   const commentId = "comment-123";
 
   beforeEach(async () => {
+    // Arrange
     await UsersTableTestHelper.addUser({ id: userId, username: "dicoding" });
     await ThreadsTableTestHelper.addThread({ id: threadId, owner: userId });
     await CommentsTableTestHelper.addComment({
@@ -39,7 +40,7 @@ describe("ReplyRepositoryPostgres", () => {
     it("should persist new reply and return added reply correctly", async () => {
       // Arrange
       const newReply = new NewReply({ content: "This is a reply" });
-      const fakeIdGenerator = () => "123"; // stub!
+      const fakeIdGenerator = () => "123";
       const replyRepositoryPostgres = new ReplyRepositoryPostgres(
         pool,
         fakeIdGenerator
@@ -72,6 +73,7 @@ describe("ReplyRepositoryPostgres", () => {
     it("should throw NotFoundError when reply not found", async () => {
       // Arrange
       const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
+
       // Action & Assert
       await expect(
         replyRepositoryPostgres.verifyReplyExists(
@@ -99,6 +101,69 @@ describe("ReplyRepositoryPostgres", () => {
           threadId
         )
       ).resolves.not.toThrowError(NotFoundError);
+    });
+
+    it("should throw NotFoundError if reply exists but for a different commentId", async () => {
+      // Arrange
+      await RepliesTableTestHelper.addReply({
+        id: "reply-xyz",
+        commentId,
+        owner: userId,
+      });
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
+
+      // Action & Assert
+      await expect(
+        replyRepositoryPostgres.verifyReplyExists(
+          "reply-xyz",
+          "comment-other",
+          threadId
+        )
+      ).rejects.toThrowError(NotFoundError);
+    });
+
+    it("should throw NotFoundError if reply and comment exist but for a different threadId", async () => {
+      // Arrange
+      await RepliesTableTestHelper.addReply({
+        id: "reply-xyz",
+        commentId,
+        owner: userId,
+      });
+      const otherThreadId = "thread-456";
+      await ThreadsTableTestHelper.addThread({
+        id: otherThreadId,
+        owner: userId,
+      });
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
+
+      // Action & Assert
+      await expect(
+        replyRepositoryPostgres.verifyReplyExists(
+          "reply-xyz",
+          commentId,
+          otherThreadId
+        )
+      ).rejects.toThrowError(NotFoundError);
+    });
+
+    it("should throw NotFoundError if reply exists but is_deleted is true", async () => {
+      // Arrange
+      await RepliesTableTestHelper.addReply({
+        id: "reply-xyz",
+        commentId,
+        owner: userId,
+        isDeleted: true,
+      });
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
+
+      // Action & Assert
+      await expect(
+        replyRepositoryPostgres.verifyReplyExists(
+          "reply-xyz",
+          commentId,
+          threadId
+        )
+      ).rejects.toThrowError(NotFoundError);
     });
   });
 
@@ -142,6 +207,22 @@ describe("ReplyRepositoryPostgres", () => {
         replyRepositoryPostgres.verifyReplyAccess("reply-nonexistent", userId)
       ).rejects.toThrowError(NotFoundError);
     });
+
+    it("should throw NotFoundError if reply exists but is_deleted is true (during access check)", async () => {
+      // Arrange
+      await RepliesTableTestHelper.addReply({
+        id: "reply-xyz",
+        owner: userId,
+        commentId,
+        isDeleted: true,
+      });
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
+
+      // Action & Assert
+      await expect(
+        replyRepositoryPostgres.verifyReplyAccess("reply-xyz", userId)
+      ).rejects.toThrowError(NotFoundError);
+    });
   });
 
   describe("deleteReplyById function", () => {
@@ -176,10 +257,52 @@ describe("ReplyRepositoryPostgres", () => {
 
   describe("getRepliesByCommentIds function", () => {
     it("should return empty array if no replies found for comment IDs", async () => {
+      // Arrange
       const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
+
+      // Action
       const replies = await replyRepositoryPostgres.getRepliesByCommentIds([
         "comment-nonexistent",
       ]);
+
+      // Assert
+      expect(replies).toEqual([]);
+    });
+
+    it("should return empty array when commentIds is null", async () => {
+      // Arrange
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
+
+      // Action
+      const replies = await replyRepositoryPostgres.getRepliesByCommentIds(
+        null
+      );
+
+      // Assert
+      expect(replies).toEqual([]);
+    });
+
+    it("should return empty array when commentIds is undefined", async () => {
+      // Arrange
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
+
+      // Action
+      const replies = await replyRepositoryPostgres.getRepliesByCommentIds(
+        undefined
+      );
+
+      // Assert
+      expect(replies).toEqual([]);
+    });
+
+    it("should return empty array when commentIds is an empty array", async () => {
+      // Arrange
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
+
+      // Action
+      const replies = await replyRepositoryPostgres.getRepliesByCommentIds([]);
+
+      // Assert
       expect(replies).toEqual([]);
     });
 
@@ -187,20 +310,19 @@ describe("ReplyRepositoryPostgres", () => {
       // Arrange
       const user2Id = "user-456";
       await UsersTableTestHelper.addUser({ id: user2Id, username: "johndoe" });
-      // commentId (dicoding)
       await RepliesTableTestHelper.addReply({
         id: "reply-1",
         commentId,
         owner: userId,
         content: "reply 1 user1",
-        date: "2023-01-01T00:00:00.000Z",
+        date: "2025-05-23T00:00:00.000Z",
       });
       await RepliesTableTestHelper.addReply({
         id: "reply-2",
         commentId,
         owner: user2Id,
         content: "reply 2 user2",
-        date: "2023-01-01T01:00:00.000Z",
+        date: "2025-05-23T01:00:00.000Z",
         isDeleted: true,
       });
 
@@ -215,7 +337,7 @@ describe("ReplyRepositoryPostgres", () => {
         commentId: comment2Id,
         owner: userId,
         content: "reply 3 user1 on comment2",
-        date: "2023-01-02T00:00:00.000Z",
+        date: "2025-05-23T00:00:00.000Z",
       });
 
       const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
@@ -228,8 +350,6 @@ describe("ReplyRepositoryPostgres", () => {
 
       // Assert
       expect(replies).toHaveLength(3);
-      // Check order by date for each comment group and overall if relevant (query orders by date)
-      // Here, we just check if all expected replies are present and mapped correctly
       expect(replies).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -255,7 +375,6 @@ describe("ReplyRepositoryPostgres", () => {
           }),
         ])
       );
-      // Ensure date order for a specific comment (if query guarantees it within comment_id groups)
       const comment1Replies = replies
         .filter((r) => r.comment_id === commentId)
         .sort((a, b) => new Date(a.date) - new Date(b.date));
