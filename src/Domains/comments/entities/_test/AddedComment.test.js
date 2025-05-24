@@ -18,7 +18,7 @@ describe("AddedComment entities", () => {
     expect(addedComment.owner).toEqual(payload.owner);
   });
 
-  it("should throw error when payload not contain needed property", () => {
+  it("should throw error when payload not contain needed property (missing owner)", () => {
     // Arrange
     const payload = {
       id: "comment-123",
@@ -32,7 +32,33 @@ describe("AddedComment entities", () => {
     );
   });
 
-  it("should throw error when payload did not meet data type specification", () => {
+  it("should throw error when payload not contain needed property (missing id)", () => {
+    // Arrange
+    const payload = {
+      content: "sebuah comment",
+      owner: "user-123",
+    };
+
+    // Action & Assert
+    expect(() => new AddedComment(payload)).toThrowError(
+      "ADDED_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
+
+  it("should throw error when payload not contain needed property (missing content)", () => {
+    // Arrange
+    const payload = {
+      id: "comment-123",
+      owner: "user-123",
+    };
+
+    // Action & Assert
+    expect(() => new AddedComment(payload)).toThrowError(
+      "ADDED_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
+
+  it("should throw error when payload did not meet data type specification (content not string)", () => {
     // Arrange
     const payload = {
       id: "comment-123",
