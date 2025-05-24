@@ -70,4 +70,37 @@ describe("AddCommentUseCase", () => {
       mockCommentRepository.addComment.mock.calls[0][0];
     expect(newCommentArgument.content).toEqual(useCasePayload.content);
   });
+
+  it("should throw error if thread does not exist", async () => {
+    // Arrange
+    const useCasePayload = {
+      content: "This is a comment",
+    };
+    const threadId = "thread-nonexistent";
+    const owner = "user-123";
+
+    const mockCommentRepository = new CommentRepository();
+    const mockThreadRepository = new ThreadRepository();
+
+    mockThreadRepository.verifyThreadExists = jest
+      .fn()
+      .mockRejectedValue(new Error("THREAD_NOT_FOUND"));
+    mockCommentRepository.addComment = jest.fn();
+
+    const addCommentUseCase = new AddCommentUseCase({
+      commentRepository: mockCommentRepository,
+      threadRepository: mockThreadRepository,
+    });
+
+    // Action & Assert
+    await expect(
+      addCommentUseCase.execute(useCasePayload, threadId, owner)
+    ).rejects.toThrow("THREAD_NOT_FOUND");
+
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledTimes(1);
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
+      threadId
+    );
+    expect(mockCommentRepository.addComment).not.toHaveBeenCalled();
+  });
 });
