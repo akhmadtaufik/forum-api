@@ -7,20 +7,20 @@ describe("ReplyRepository interface", () => {
 
     // Action and Assert
     await expect(replyRepository.addReply({}, "", "")).rejects.toThrowError(
-      "METHOD_NOT_IMPLEMENTED"
+      "REPLY_REPOSITORY.METHOD_NOT_IMPLEMENTED"
     );
     await expect(
       replyRepository.verifyReplyExists("", "", "")
-    ).rejects.toThrowError("METHOD_NOT_IMPLEMENTED");
+    ).rejects.toThrowError("REPLY_REPOSITORY.METHOD_NOT_IMPLEMENTED");
     await expect(
       replyRepository.verifyReplyAccess("", "")
-    ).rejects.toThrowError("METHOD_NOT_IMPLEMENTED");
+    ).rejects.toThrowError("REPLY_REPOSITORY.METHOD_NOT_IMPLEMENTED");
     await expect(replyRepository.deleteReplyById("")).rejects.toThrowError(
-      "METHOD_NOT_IMPLEMENTED"
+      "REPLY_REPOSITORY.METHOD_NOT_IMPLEMENTED"
     );
     await expect(
       replyRepository.getRepliesByCommentIds([])
-    ).rejects.toThrowError("METHOD_NOT_IMPLEMENTED");
+    ).rejects.toThrowError("REPLY_REPOSITORY.METHOD_NOT_IMPLEMENTED");
   });
 });
 
