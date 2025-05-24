@@ -1,7 +1,15 @@
 const CommentDetail = require("../CommentDetail");
 
 describe("CommentDetail entities", () => {
-  it("should throw error when payload did not contain needed property", () => {
+  const basePayloadForMissingTests = {
+    id: "comment-123",
+    username: "user123",
+    date: "2025-05-19T07:22:33.555Z",
+    content: "sebuah comment",
+    replies: [],
+  };
+
+  it("should throw error when payload did not contain needed property (missing content)", () => {
     // Arrange
     const payload = {
       id: "comment-123",
@@ -16,7 +24,40 @@ describe("CommentDetail entities", () => {
     );
   });
 
-  it("should throw error when payload did not meet data type specification", () => {
+  it("should throw error when payload did not contain needed property (missing id)", () => {
+    // Arrange
+    const payload = { ...basePayloadForMissingTests };
+    delete payload.id;
+
+    // Action and Assert
+    expect(() => new CommentDetail(payload)).toThrowError(
+      "COMMENT_DETAIL.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
+
+  it("should throw error when payload did not contain needed property (missing username)", () => {
+    // Arrange
+    const payload = { ...basePayloadForMissingTests };
+    delete payload.username;
+
+    // Action and Assert
+    expect(() => new CommentDetail(payload)).toThrowError(
+      "COMMENT_DETAIL.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
+
+  it("should throw error when payload did not contain needed property (missing date)", () => {
+    // Arrange
+    const payload = { ...basePayloadForMissingTests };
+    delete payload.date;
+
+    // Action and Assert
+    expect(() => new CommentDetail(payload)).toThrowError(
+      "COMMENT_DETAIL.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
+
+  it("should throw error when payload did not meet data type specification (content not string)", () => {
     // Arrange
     const payload = {
       id: "comment-123",
@@ -88,7 +129,7 @@ describe("CommentDetail entities", () => {
 
     // Action and Assert
     expect(() => new CommentDetail(payload)).toThrowError(
-      "COMMENT_DETAIL.REPLIES_SHOULD_BE_ARRAY" // Corrected expected error
+      "COMMENT_DETAIL.REPLIES_SHOULD_BE_ARRAY"
     );
   });
 
@@ -165,8 +206,8 @@ describe("CommentDetail entities", () => {
       username: "user123",
       date: "2025-05-19T07:22:33.555Z",
       content: "sebuah comment",
-      is_deleted: true, // Using is_deleted with underscore
-      replies: [{ id: "reply-1" }], // Providing some replies
+      is_deleted: true,
+      replies: [{ id: "reply-1" }],
     };
 
     // Action
