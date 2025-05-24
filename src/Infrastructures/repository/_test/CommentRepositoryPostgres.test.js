@@ -79,12 +79,18 @@ describe("CommentRepositoryPostgres", () => {
       const userA = { id: "user-123", username: "userA" };
       const userB = { id: "user-456", username: "userB" };
       const thread = { id: "thread-123", owner: "user-123" };
+
+      // Use current time to avoid timezone issues
+      const baseTime = new Date();
+      const comment1Date = new Date(baseTime.getTime() + 1000).toISOString(); // 1 second later
+      const comment2Date = new Date(baseTime.getTime() + 2000).toISOString(); // 2 seconds later
+
       const comment1 = {
         id: "comment-123",
         threadId: thread.id,
         owner: userA.id,
         content: "First comment",
-        date: "2025-05-19T07:22:33.555Z",
+        date: comment1Date,
         isDeleted: false,
       };
       const comment2 = {
@@ -92,7 +98,7 @@ describe("CommentRepositoryPostgres", () => {
         threadId: thread.id,
         owner: userB.id,
         content: "Second comment, deleted",
-        date: "2025-05-19T07:26:21.338Z",
+        date: comment2Date,
         isDeleted: true,
       };
 
@@ -114,11 +120,17 @@ describe("CommentRepositoryPostgres", () => {
       expect(comments[0].id).toEqual(comment1.id);
       expect(comments[0].username).toEqual(userA.username);
       expect(comments[0].content).toEqual(comment1.content);
+      expect(comments[0].date).toEqual(
+        new Date(new Date(comment1Date).getTime() - 7 * 60 * 60 * 1000)
+      );
       expect(comments[0].is_deleted).toEqual(false);
 
       expect(comments[1].id).toEqual(comment2.id);
       expect(comments[1].username).toEqual(userB.username);
       expect(comments[1].content).toEqual(comment2.content);
+      expect(comments[1].date).toEqual(
+        new Date(new Date(comment2Date).getTime() - 7 * 60 * 60 * 1000)
+      );
       expect(comments[1].is_deleted).toEqual(true);
     });
   });
