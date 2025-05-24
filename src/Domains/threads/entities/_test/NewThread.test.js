@@ -1,7 +1,7 @@
 const NewThread = require("../NewThread");
 
 describe("NewThread entities", () => {
-  it("should throw error when payload not contain needed property", () => {
+  it("should throw error when payload not contain needed property (missing body)", () => {
     // Arrange
     const payload = {
       title: "abc",
@@ -14,11 +14,36 @@ describe("NewThread entities", () => {
     );
   });
 
-  it("should throw error when payload not meet data type specification", () => {
+  it("should throw error when payload not contain needed property (missing title)", () => {
     // Arrange
     const payload = {
-      title: 123,
-      body: true,
+      body: "abc body",
+    };
+
+    // Action & Assert
+    expect(() => new NewThread(payload)).toThrowError(
+      "NEW_THREAD.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
+
+  it("should throw error when payload title not meet data type specification", () => {
+    // Arrange
+    const payload = {
+      title: 123, // not a string
+      body: "abc body",
+    };
+
+    // Action & Assert
+    expect(() => new NewThread(payload)).toThrowError(
+      "NEW_THREAD.NOT_MEET_DATA_TYPE_SPECIFICATION"
+    );
+  });
+
+  it("should throw error when payload body not meet data type specification", () => {
+    // Arrange
+    const payload = {
+      title: "abc",
+      body: 123, // not a string
     };
 
     // Action & Assert
@@ -43,8 +68,8 @@ describe("NewThread entities", () => {
   it("should create NewThread entities correctly", () => {
     // Arrange
     const payload = {
-      title: "Dicoding Indonesia",
-      body: "Dicoding Indonesia adalah platform belajar pemrograman online terbaik di Indonesia",
+      title: "Sebuah title",
+      body: "Lorem ipsum",
     };
 
     // Action
