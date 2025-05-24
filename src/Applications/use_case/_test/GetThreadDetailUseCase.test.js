@@ -232,6 +232,9 @@ describe("GetThreadDetailUseCase", () => {
       );
     // getThreadById should not be called if verifyThreadExists rejects
     mockThreadRepository.getThreadById = jest.fn();
+    // Mock other repository methods that should not be called
+    mockCommentRepository.getCommentsByThreadId = jest.fn();
+    mockReplyRepository.getRepliesByCommentIds = jest.fn();
 
     /** creating use case instance */
     const getThreadDetailUseCase = new GetThreadDetailUseCase({
@@ -244,10 +247,11 @@ describe("GetThreadDetailUseCase", () => {
     await expect(
       getThreadDetailUseCase.execute(useCasePayload.threadId)
     ).rejects.toThrowError(NotFoundError);
-    expect(mockThreadRepository.verifyThreadExists).toBeCalledWith(
-      // Check verifyThreadExists was called
+    expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
       useCasePayload.threadId
     );
-    expect(mockThreadRepository.getThreadById).not.toBeCalled(); // Ensure getThreadById was not called
+    expect(mockThreadRepository.getThreadById).not.toHaveBeenCalled();
+    expect(mockCommentRepository.getCommentsByThreadId).not.toHaveBeenCalled();
+    expect(mockReplyRepository.getRepliesByCommentIds).not.toHaveBeenCalled();
   });
 });
