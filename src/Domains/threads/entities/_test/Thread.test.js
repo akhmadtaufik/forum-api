@@ -1,15 +1,18 @@
 const Thread = require("../Thread");
 
 describe("Thread entities", () => {
-  it("should throw error when payload not contain needed property", () => {
+  const basePayload = {
+    id: "thread-123",
+    title: "abc title",
+    body: "abc body",
+    owner: "user-123",
+    date: new Date(),
+  };
+
+  it("should throw error when payload not contain needed property (missing date)", () => {
     // Arrange
-    const payload = {
-      id: "thread-123",
-      title: "abc",
-      body: "abc body",
-      owner: "user-123",
-      // date is missing
-    };
+    const payload = { ...basePayload };
+    delete payload.date;
 
     // Action & Assert
     expect(() => new Thread(payload)).toThrowError(
@@ -17,16 +20,85 @@ describe("Thread entities", () => {
     );
   });
 
-  it("should throw error when payload not meet data type specification", () => {
+  it("should throw error when payload not contain needed property (missing id)", () => {
     // Arrange
-    const payload = {
-      id: 123,
-      title: true,
-      body: {},
-      owner: 12345,
-      date: [],
-    };
+    const payload = { ...basePayload };
+    delete payload.id;
+    // Action & Assert
+    expect(() => new Thread(payload)).toThrowError(
+      "THREAD.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
 
+  it("should throw error when payload not contain needed property (missing title)", () => {
+    // Arrange
+    const payload = { ...basePayload };
+    delete payload.title;
+    // Action & Assert
+    expect(() => new Thread(payload)).toThrowError(
+      "THREAD.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
+
+  it("should throw error when payload not contain needed property (missing body)", () => {
+    // Arrange
+    const payload = { ...basePayload };
+    delete payload.body;
+    // Action & Assert
+    expect(() => new Thread(payload)).toThrowError(
+      "THREAD.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
+
+  it("should throw error when payload not contain needed property (missing owner)", () => {
+    // Arrange
+    const payload = { ...basePayload };
+    delete payload.owner;
+    // Action & Assert
+    expect(() => new Thread(payload)).toThrowError(
+      "THREAD.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
+
+  it("should throw error when payload id not meet data type specification", () => {
+    // Arrange
+    const payload = { ...basePayload, id: 123 };
+    // Action & Assert
+    expect(() => new Thread(payload)).toThrowError(
+      "THREAD.NOT_MEET_DATA_TYPE_SPECIFICATION"
+    );
+  });
+
+  it("should throw error when payload title not meet data type specification", () => {
+    // Arrange
+    const payload = { ...basePayload, title: 123 };
+    // Action & Assert
+    expect(() => new Thread(payload)).toThrowError(
+      "THREAD.NOT_MEET_DATA_TYPE_SPECIFICATION"
+    );
+  });
+
+  it("should throw error when payload body not meet data type specification", () => {
+    // Arrange
+    const payload = { ...basePayload, body: 123 };
+    // Action & Assert
+    expect(() => new Thread(payload)).toThrowError(
+      "THREAD.NOT_MEET_DATA_TYPE_SPECIFICATION"
+    );
+  });
+
+  it("should throw error when payload owner not meet data type specification", () => {
+    // Arrange
+    const payload = { ...basePayload, owner: 123 };
+    // Action & Assert
+    expect(() => new Thread(payload)).toThrowError(
+      "THREAD.NOT_MEET_DATA_TYPE_SPECIFICATION"
+    );
+  });
+
+  it("should throw error when payload date not meet data type specification", () => {
+    // Arrange
+    const payload = { ...basePayload, date: 123 }; // not string or Date
     // Action & Assert
     expect(() => new Thread(payload)).toThrowError(
       "THREAD.NOT_MEET_DATA_TYPE_SPECIFICATION"
@@ -38,7 +110,7 @@ describe("Thread entities", () => {
     const dateNow = new Date().toISOString();
     const payload = {
       id: "thread-123",
-      title: "Dicoding Indonesia",
+      title: "Sebuah title",
       body: "Isi thread",
       owner: "user-123",
       date: dateNow,
@@ -61,7 +133,7 @@ describe("Thread entities", () => {
     const dateNow = new Date();
     const payload = {
       id: "thread-123",
-      title: "Dicoding Indonesia",
+      title: "Sebuah title",
       body: "Isi thread",
       owner: "user-123",
       date: dateNow,
