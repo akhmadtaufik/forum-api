@@ -96,7 +96,9 @@ describe("AddReplyUseCase", () => {
 
     mockThreadRepository.verifyThreadExists = jest.fn(() =>
       Promise.reject(new Error("THREAD_NOT_FOUND"))
-    ); // Simulate error
+    );
+    mockCommentRepository.verifyCommentExistsInThread = jest.fn();
+    mockReplyRepository.addReply = jest.fn();
 
     const addReplyUseCase = new AddReplyUseCase({
       replyRepository: mockReplyRepository,
@@ -112,6 +114,10 @@ describe("AddReplyUseCase", () => {
     expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
       threadId
     );
+    // Verify that verifyCommentExistsInThread is not called when thread verification fails
+    expect(
+      mockCommentRepository.verifyCommentExistsInThread
+    ).not.toHaveBeenCalled();
   });
 
   it("should throw error if comment does not exist in thread", async () => {
