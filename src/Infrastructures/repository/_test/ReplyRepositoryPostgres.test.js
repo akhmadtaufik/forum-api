@@ -357,6 +357,7 @@ describe("ReplyRepositoryPostgres", () => {
             comment_id: commentId,
             username: "dicoding",
             content: "reply 1 user1",
+            date: new Date("2025-05-22T17:00:00.000Z"),
             is_deleted: false,
           }),
           expect.objectContaining({
@@ -364,6 +365,7 @@ describe("ReplyRepositoryPostgres", () => {
             comment_id: commentId,
             username: "johndoe",
             content: "reply 2 user2",
+            date: new Date("2025-05-22T18:00:00.000Z"),
             is_deleted: true,
           }),
           expect.objectContaining({
@@ -371,6 +373,7 @@ describe("ReplyRepositoryPostgres", () => {
             comment_id: comment2Id,
             username: "dicoding",
             content: "reply 3 user1 on comment2",
+            date: new Date("2025-05-22T17:00:00.000Z"),
             is_deleted: false,
           }),
         ])
