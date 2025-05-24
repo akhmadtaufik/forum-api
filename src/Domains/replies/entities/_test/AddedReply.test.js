@@ -1,7 +1,7 @@
 const AddedReply = require("../AddedReply");
 
 describe("AddedReply entities", () => {
-  it("should throw error when payload did not contain needed property", () => {
+  it("should throw error when payload did not contain needed property (missing owner)", () => {
     // Arrange
     const payload = {
       id: "reply-123",
@@ -14,12 +14,66 @@ describe("AddedReply entities", () => {
     );
   });
 
-  it("should throw error when payload did not meet data type specification", () => {
+  it("should throw error when payload did not contain needed property (missing id)", () => {
+    // Arrange
+    const payload = {
+      content: "a reply",
+      owner: "user-123",
+    };
+
+    // Action and Assert
+    expect(() => new AddedReply(payload)).toThrowError(
+      "ADDED_REPLY.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
+
+  it("should throw error when payload did not contain needed property (missing content)", () => {
+    // Arrange
+    const payload = {
+      id: "reply-123",
+      owner: "user-123",
+    };
+
+    // Action and Assert
+    expect(() => new AddedReply(payload)).toThrowError(
+      "ADDED_REPLY.NOT_CONTAIN_NEEDED_PROPERTY"
+    );
+  });
+
+  it("should throw error when payload did not meet data type specification (id not string)", () => {
     // Arrange
     const payload = {
       id: 123,
       content: "a reply",
       owner: "user-123",
+    };
+
+    // Action and Assert
+    expect(() => new AddedReply(payload)).toThrowError(
+      "ADDED_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION"
+    );
+  });
+
+  it("should throw error when payload did not meet data type specification (content not string)", () => {
+    // Arrange
+    const payload = {
+      id: "reply-123",
+      content: 123, // not a string
+      owner: "user-123",
+    };
+
+    // Action and Assert
+    expect(() => new AddedReply(payload)).toThrowError(
+      "ADDED_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION"
+    );
+  });
+
+  it("should throw error when payload did not meet data type specification (owner not string)", () => {
+    // Arrange
+    const payload = {
+      id: "reply-123",
+      content: "a reply",
+      owner: 123, // not a string
     };
 
     // Action and Assert
