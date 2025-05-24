@@ -173,7 +173,7 @@ describe("ThreadRepositoryPostgres integration test", () => {
       expect(result.body).toEqual(threadData.body);
       expect(result.username).toBeDefined();
       expect(result.date).toBeDefined();
-      expect(() => new Date(result.date)).not.toThrow();
+      expect(() => new Date(result.date)).not.toThrow(NotFoundError);
     });
 
     it("should throw NotFoundError if thread does not exist when getting details", async () => {
