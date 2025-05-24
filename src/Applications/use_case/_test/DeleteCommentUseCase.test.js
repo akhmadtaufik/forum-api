@@ -82,6 +82,10 @@ describe("DeleteCommentUseCase", () => {
       .mockImplementation(() =>
         Promise.reject(new NotFoundError("Thread tidak ditemukan"))
       );
+    // Mock other repository methods that should not be called
+    mockCommentRepository.verifyCommentExists = jest.fn();
+    mockCommentRepository.verifyCommentOwner = jest.fn();
+    mockCommentRepository.deleteComment = jest.fn();
 
     /** creating use case instance */
     const deleteCommentUseCase = new DeleteCommentUseCase({
@@ -101,6 +105,9 @@ describe("DeleteCommentUseCase", () => {
     expect(mockThreadRepository.verifyThreadExists).toHaveBeenCalledWith(
       useCasePayload.threadId
     );
+    expect(mockCommentRepository.verifyCommentExists).not.toHaveBeenCalled();
+    expect(mockCommentRepository.verifyCommentOwner).not.toHaveBeenCalled();
+    expect(mockCommentRepository.deleteComment).not.toHaveBeenCalled();
   });
 
   it("should throw NotFoundError when comment does not exist", async () => {
@@ -147,6 +154,11 @@ describe("DeleteCommentUseCase", () => {
     expect(mockCommentRepository.verifyCommentExists).toHaveBeenCalledWith(
       useCasePayload.commentId
     );
+    // Mock and assert methods not called after verifyCommentExists rejects
+    mockCommentRepository.verifyCommentOwner = jest.fn();
+    mockCommentRepository.deleteComment = jest.fn();
+    expect(mockCommentRepository.verifyCommentOwner).not.toHaveBeenCalled();
+    expect(mockCommentRepository.deleteComment).not.toHaveBeenCalled();
   });
 
   it("should throw AuthorizationError when user is not the comment owner", async () => {
@@ -203,5 +215,8 @@ describe("DeleteCommentUseCase", () => {
       useCasePayload.commentId,
       useCasePayload.owner
     );
+    // Mock and assert method not called after verifyCommentOwner rejects
+    mockCommentRepository.deleteComment = jest.fn();
+    expect(mockCommentRepository.deleteComment).not.toHaveBeenCalled();
   });
 });
