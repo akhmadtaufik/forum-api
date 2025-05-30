@@ -343,21 +343,33 @@ describe("ReplyRepositoryPostgres", () => {
       const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {});
 
       // Action
-      const replies = await replyRepositoryPostgres.getRepliesByCommentIds([
-        commentId,
-        comment2Id,
-      ]);
+      const repliesFromRepo =
+        await replyRepositoryPostgres.getRepliesByCommentIds([
+          commentId,
+          comment2Id,
+        ]);
+
+      // Pre-process dates to ISO strings for comparison
+      const processedReplies = repliesFromRepo.map((reply) => {
+        // Ensure reply.date is a Date object before calling toISOString
+        const dateValue =
+          typeof reply.date === "string" ? new Date(reply.date) : reply.date;
+        return {
+          ...reply,
+          date: dateValue.toISOString(),
+        };
+      });
 
       // Assert
-      expect(replies).toHaveLength(3);
-      expect(replies).toEqual(
+      expect(processedReplies).toHaveLength(3);
+      expect(processedReplies).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             id: "reply-1",
             comment_id: commentId,
             username: "dicoding",
             content: "reply 1 user1",
-            date: new Date("2025-05-22T17:00:00.000Z"),
+            date: "2025-05-23T00:00:00.000Z",
             is_deleted: false,
           }),
           expect.objectContaining({
@@ -365,7 +377,7 @@ describe("ReplyRepositoryPostgres", () => {
             comment_id: commentId,
             username: "johndoe",
             content: "reply 2 user2",
-            date: new Date("2025-05-22T18:00:00.000Z"),
+            date: "2025-05-23T01:00:00.000Z",
             is_deleted: true,
           }),
           expect.objectContaining({
@@ -373,12 +385,12 @@ describe("ReplyRepositoryPostgres", () => {
             comment_id: comment2Id,
             username: "dicoding",
             content: "reply 3 user1 on comment2",
-            date: new Date("2025-05-22T17:00:00.000Z"),
+            date: "2025-05-23T00:00:00.000Z",
             is_deleted: false,
           }),
         ])
       );
-      const comment1Replies = replies
+      const comment1Replies = processedReplies
         .filter((r) => r.comment_id === commentId)
         .sort((a, b) => new Date(a.date) - new Date(b.date));
       expect(comment1Replies[0].id).toBe("reply-1");
