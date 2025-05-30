@@ -1,0 +1,4 @@
+.vscode
+.qodo
+node_modules
+.env
