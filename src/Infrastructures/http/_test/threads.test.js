@@ -44,7 +44,7 @@ describe("/threads endpoint functional tests", () => {
   });
 
   afterEach(async () => {
-    await RepliesTableTestHelper.cleanTable(); // Clean replies
+    await RepliesTableTestHelper.cleanTable();
     await CommentsTableTestHelper.cleanTable();
     await ThreadsTableTestHelper.cleanTable();
   });
@@ -187,7 +187,7 @@ describe("/threads endpoint functional tests", () => {
         title: "sebuah thread",
         body: "sebuah body thread",
         owner: "user-123",
-        date: "2025-05-19T07:19:09.775Z",
+        date: "2025-05-19T00:19:09.775Z",
       });
 
       await CommentsTableTestHelper.addComment({
@@ -195,7 +195,7 @@ describe("/threads endpoint functional tests", () => {
         content: "sebuah comment",
         owner: "user-123", // dicoding
         threadId: "thread-123",
-        date: "2025-05-19T07:22:33.555Z",
+        date: "2025-05-19T00:22:33.555Z",
         isDeleted: false,
       });
 
@@ -204,7 +204,7 @@ describe("/threads endpoint functional tests", () => {
         content: "komentar yang akan dihapus",
         owner: "user-456", // johndoe
         threadId: "thread-123",
-        date: "2025-05-19T07:26:21.338Z",
+        date: "2025-05-19T00:26:21.338Z",
         isDeleted: true,
       });
 
@@ -214,7 +214,7 @@ describe("/threads endpoint functional tests", () => {
         content: "balasan pertama untuk comment-123",
         owner: "user-456", // johndoe
         commentId: "comment-123",
-        date: "2025-05-19T07:30:00.000Z",
+        date: "2025-05-19T00:30:00.000Z",
         isDeleted: false,
       });
 
@@ -223,7 +223,7 @@ describe("/threads endpoint functional tests", () => {
         content: "balasan kedua untuk comment-123 (dihapus)",
         owner: "user-123", // dicoding
         commentId: "comment-123",
-        date: "2025-05-19T07:32:00.000Z",
+        date: "2025-05-19T00:32:00.000Z", // Adjusted to UTC
         isDeleted: true,
       });
 
@@ -241,7 +241,7 @@ describe("/threads endpoint functional tests", () => {
       expect(thread.id).toEqual("thread-123");
       expect(thread.title).toEqual("sebuah thread");
       expect(thread.body).toEqual("sebuah body thread");
-      expect(thread.date).toEqual("2025-05-19T00:19:09.775Z"); // Adjusted to UTC
+      expect(thread.date).toEqual("2025-05-19T00:19:09.775Z");
       expect(thread.username).toEqual("dicoding");
 
       expect(thread.comments).toHaveLength(2);
@@ -250,27 +250,27 @@ describe("/threads endpoint functional tests", () => {
       // Comment 1 assertions
       expect(comment1.id).toEqual("comment-123");
       expect(comment1.username).toEqual("dicoding");
-      expect(comment1.date).toEqual("2025-05-19T00:22:33.555Z"); // Adjusted to UTC
+      expect(comment1.date).toEqual("2025-05-19T00:22:33.555Z");
       expect(comment1.content).toEqual("sebuah comment");
       expect(comment1.replies).toHaveLength(2);
 
       const [reply1_comment1, reply2_comment1] = comment1.replies;
       expect(reply1_comment1.id).toEqual("reply-123");
       expect(reply1_comment1.username).toEqual("johndoe");
-      expect(reply1_comment1.date).toEqual("2025-05-19T00:30:00.000Z"); // Adjusted to UTC
+      expect(reply1_comment1.date).toEqual("2025-05-19T00:30:00.000Z");
       expect(reply1_comment1.content).toEqual(
         "balasan pertama untuk comment-123"
       );
 
       expect(reply2_comment1.id).toEqual("reply-456");
       expect(reply2_comment1.username).toEqual("dicoding");
-      expect(reply2_comment1.date).toEqual("2025-05-19T00:32:00.000Z"); // Adjusted to UTC
+      expect(reply2_comment1.date).toEqual("2025-05-19T00:32:00.000Z");
       expect(reply2_comment1.content).toEqual("**balasan telah dihapus**");
 
       // Comment 2 assertions
       expect(comment2.id).toEqual("comment-456");
       expect(comment2.username).toEqual("johndoe");
-      expect(comment2.date).toEqual("2025-05-19T00:26:21.338Z"); // Adjusted to UTC
+      expect(comment2.date).toEqual("2025-05-19T00:26:21.338Z");
       expect(comment2.content).toEqual("**komentar telah dihapus**");
       expect(comment2.replies).toEqual([]); // No replies for this comment
     });
