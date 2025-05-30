@@ -79,11 +79,8 @@ describe("CommentRepositoryPostgres", () => {
       const userA = { id: "user-123", username: "userA" };
       const userB = { id: "user-456", username: "userB" };
       const thread = { id: "thread-123", owner: "user-123" };
-
-      // Use current time to avoid timezone issues
-      const baseTime = new Date();
-      const comment1Date = new Date(baseTime.getTime() + 1000).toISOString(); // 1 second later
-      const comment2Date = new Date(baseTime.getTime() + 2000).toISOString(); // 2 seconds later
+      const comment1Date = "2025-05-30T10:30:00.123Z";
+      const comment2Date = "2025-05-30T10:35:00.456Z";
 
       const comment1 = {
         id: "comment-123",
