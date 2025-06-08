@@ -34,10 +34,10 @@ describe("AddReplyUseCase", () => {
     const mockThreadRepository = new ThreadRepository();
 
     /** mocking needed function */
-    mockThreadRepository.verifyThreadExists = jest.fn(() => Promise.resolve());
+    mockThreadRepository.verifyThreadExists = jest.fn().mockResolvedValue();
     mockCommentRepository.verifyCommentExistsInThread = jest
       .fn()
-      .mockResolvedValue(undefined);
+      .mockResolvedValue();
     mockReplyRepository.addReply = jest
       .fn()
       .mockImplementation(() => Promise.resolve(mockRepositoryResponse));
@@ -74,7 +74,7 @@ describe("AddReplyUseCase", () => {
 
     expect(mockReplyRepository.addReply).toHaveBeenCalledTimes(1);
     expect(mockReplyRepository.addReply).toHaveBeenCalledWith(
-      expect.any(NewReply), // Use expect.any or a specific NewReply instance
+      new NewReply(useCasePayload),
       commentId,
       owner
     );
