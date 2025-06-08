@@ -45,10 +45,8 @@ describe("AddThreadUseCase", () => {
     // Assert
     expect(addedThread).toStrictEqual(expectedAddedThread);
     expect(mockThreadRepository.addThread).toHaveBeenCalledTimes(1);
-
-    // Check that it's called with an instance of NewThread and the ownerId
     expect(mockThreadRepository.addThread).toHaveBeenCalledWith(
-      expect.any(NewThread),
+      new NewThread(useCasePayload),
       ownerId
     );
 
