@@ -60,20 +60,20 @@ HOST=localhost
 PGUSER=your_prod_db_user
 PGPASSWORD=your_prod_db_password
 PGHOST=localhost # or 'postgres-db' if using docker-compose
-PGPORT=5432
+PGPORT=your_port
 PGDATABASE=forum_api_prod
 
 # Test Database (PostgreSQL)
 PGUSER_TEST=your_test_db_user
 PGPASSWORD_TEST=your_test_db_password
 PGHOST_TEST=localhost # or 'postgres-test' if using docker-compose
-PGPORT_TEST=5433 # Example if running locally alongside prod, or 5432 if 'postgres-test' docker service
+PGPORT_TEST=your_port
 PGDATABASE_TEST=forum_api_test
 
 # JWT Configuration
 ACCESS_TOKEN_KEY=your_super_secret_access_token_key
 REFRESH_TOKEN_KEY=your_super_secret_refresh_token_key
-ACCESS_TOKEN_AGE=3600 # Example: 1 hour in seconds (Note: docker-compose.yml has ACCCCESS_TOKEN_AGE, likely a typo)
+ACCESS_TOKEN_AGE=your_access_token_age
 ```
 
 **Note**: The `docker-compose.yml` file uses `ACCCESS_TOKEN_AGE`. Ensure your application code or `.env` file uses the correct variable name expected by the JWT manager (likely `ACCESS_TOKEN_AGE`).
