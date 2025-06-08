@@ -1,9 +1,9 @@
 const ThreadDetail = require("../../../Domains/threads/entities/ThreadDetail");
 const CommentDetail = require("../../../Domains/comments/entities/CommentDetail");
-const ReplyDetail = require("../../../Domains/replies/entities/ReplyDetail"); // Import ReplyDetail
+const ReplyDetail = require("../../../Domains/replies/entities/ReplyDetail");
 const ThreadRepository = require("../../../Domains/threads/ThreadRepository");
 const CommentRepository = require("../../../Domains/comments/CommentRepository");
-const ReplyRepository = require("../../../Domains/replies/ReplyRepository"); // Import ReplyRepository
+const ReplyRepository = require("../../../Domains/replies/ReplyRepository");
 const GetThreadDetailUseCase = require("../GetThreadDetailUseCase");
 const NotFoundError = require("../../../Commons/exceptions/NotFoundError");
 
@@ -96,9 +96,7 @@ describe("GetThreadDetailUseCase", () => {
     const mockReplyRepository = new ReplyRepository();
 
     /** mocking needed function */
-    mockThreadRepository.verifyThreadExists = jest
-      .fn()
-      .mockResolvedValue(undefined);
+    mockThreadRepository.verifyThreadExists = jest.fn().mockResolvedValue();
     mockThreadRepository.getThreadById = jest
       .fn()
       .mockResolvedValue(mockRawThreadData);
@@ -175,9 +173,7 @@ describe("GetThreadDetailUseCase", () => {
     const mockCommentRepository = new CommentRepository();
     const mockReplyRepository = new ReplyRepository();
 
-    mockThreadRepository.verifyThreadExists = jest
-      .fn()
-      .mockResolvedValue(undefined);
+    mockThreadRepository.verifyThreadExists = jest.fn().mockResolvedValue();
     mockThreadRepository.getThreadById = jest
       .fn()
       .mockResolvedValue(mockRawThreadData);
