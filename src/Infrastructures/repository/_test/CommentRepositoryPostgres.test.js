@@ -3,6 +3,7 @@ const ThreadsTableTestHelper = require("../../../../tests/ThreadsTableTestHelper
 const UsersTableTestHelper = require("../../../../tests/UsersTableTestHelper");
 const CommentRepositoryPostgres = require("../CommentRepositoryPostgres");
 const NewComment = require("../../../Domains/comments/entities/NewComment");
+const AddedComment = require("../../../Domains/comments/entities/AddedComment");
 const pool = require("../../database/postgres/pool");
 const NotFoundError = require("../../../Commons/exceptions/NotFoundError");
 const AuthorizationError = require("../../../Commons/exceptions/AuthorizationError");
@@ -45,13 +46,16 @@ describe("CommentRepositoryPostgres", () => {
       );
 
       // Assert
-      const comments = await CommentsTableTestHelper.findCommentById(
-        "comment-123"
-      );
-      expect(comments).toHaveLength(1);
+      expect(addedComment).toBeInstanceOf(AddedComment);
       expect(addedComment.id).toEqual("comment-123");
       expect(addedComment.content).toEqual(newCommentEntity.content);
       expect(addedComment.owner).toEqual("user-123");
+
+      const comments = await CommentsTableTestHelper.findCommentById(
+        "comment-123"
+      );
+      expect(comments).toBeInstanceOf(Array);
+      expect(comments).toHaveLength(1);
     });
   });
 
@@ -71,6 +75,7 @@ describe("CommentRepositoryPostgres", () => {
       );
 
       // Assert
+      expect(comments).toBeInstanceOf(Array);
       expect(comments).toEqual([]);
     });
 
@@ -113,6 +118,7 @@ describe("CommentRepositoryPostgres", () => {
       );
 
       // Assert
+      expect(comments).toBeInstanceOf(Array);
       expect(comments).toHaveLength(2);
       expect(comments[0].id).toEqual(comment1.id);
       expect(comments[0].username).toEqual(userA.username);
@@ -151,6 +157,7 @@ describe("CommentRepositoryPostgres", () => {
       const comments = await CommentsTableTestHelper.findCommentById(
         "comment-123"
       );
+      expect(comments).toBeInstanceOf(Array);
       expect(comments).toHaveLength(1);
       expect(comments[0].is_deleted).toEqual(true);
     });
