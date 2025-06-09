@@ -15,7 +15,8 @@ class CommentDetail {
 
     this.id = id;
     this.username = username;
-    this.date = date;
+    this.date =
+      date instanceof Date ? date.toISOString() : new Date(date).toISOString();
     this.content = deleted ? "**komentar telah dihapus**" : content;
     this.replies = replies;
   }
