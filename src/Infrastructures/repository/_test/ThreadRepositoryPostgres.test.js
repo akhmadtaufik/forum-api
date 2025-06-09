@@ -150,7 +150,7 @@ describe("ThreadRepositoryPostgres integration test", () => {
     it("should return thread details correctly if thread exists", async () => {
       // Arrange
       const targetThreadId = "thread-detail-001";
-      const threadDate = new Date(); // Use a fixed date for consistent testing
+      const threadDate = new Date();
       const threadData = {
         id: targetThreadId,
         title: "Detail Test Title String",
@@ -167,13 +167,13 @@ describe("ThreadRepositoryPostgres integration test", () => {
       );
 
       // Assert
-      expect(result).toBeDefined();
-      expect(result.id).toEqual(threadData.id);
-      expect(result.title).toEqual(threadData.title);
-      expect(result.body).toEqual(threadData.body);
-      expect(result.username).toBeDefined();
-      expect(result.date).toBeDefined();
-      expect(() => new Date(result.date)).not.toThrow(NotFoundError);
+      expect(result).toEqual({
+        id: threadData.id,
+        title: threadData.title,
+        body: threadData.body,
+        date: threadData.date,
+        username: "testuserrepo001",
+      });
     });
 
     it("should throw NotFoundError if thread does not exist when getting details", async () => {
