@@ -118,19 +118,22 @@ describe("CommentRepositoryPostgres", () => {
       );
 
       // Assert
-      expect(comments).toBeInstanceOf(Array);
-      expect(comments).toHaveLength(2);
-      expect(comments[0].id).toEqual(comment1.id);
-      expect(comments[0].username).toEqual(userA.username);
-      expect(comments[0].content).toEqual(comment1.content);
-      expect(new Date(comments[0].date).toISOString()).toEqual(comment1Date);
-      expect(comments[0].is_deleted).toEqual(false);
-
-      expect(comments[1].id).toEqual(comment2.id);
-      expect(comments[1].username).toEqual(userB.username);
-      expect(comments[1].content).toEqual(comment2.content);
-      expect(new Date(comments[1].date).toISOString()).toEqual(comment2Date);
-      expect(comments[1].is_deleted).toEqual(true);
+      expect(comments).toEqual([
+        {
+          id: comment1.id,
+          username: userA.username,
+          date: comment1Date,
+          content: comment1.content,
+          is_deleted: false,
+        },
+        {
+          id: comment2.id,
+          username: userB.username,
+          date: comment2Date,
+          content: comment2.content,
+          is_deleted: true,
+        },
+      ]);
     });
   });
 
