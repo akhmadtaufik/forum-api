@@ -349,15 +349,9 @@ describe("ReplyRepositoryPostgres", () => {
           comment2Id,
         ]);
 
-      // Pre-process dates to ISO strings for comparison
-      const processedReplies = repliesFromRepo.map((reply) => ({
-        ...reply,
-        date: new Date(reply.date).toISOString(),
-      }));
-
       // Assert
-      expect(processedReplies).toHaveLength(3);
-      expect(processedReplies).toEqual(
+      expect(repliesFromRepo).toHaveLength(3);
+      expect(repliesFromRepo).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             id: "reply-1",
@@ -385,7 +379,8 @@ describe("ReplyRepositoryPostgres", () => {
           }),
         ])
       );
-      const comment1Replies = processedReplies
+      // Verify sorting based on ISO date strings
+      const comment1Replies = repliesFromRepo
         .filter((r) => r.comment_id === commentId)
         .sort((a, b) => new Date(a.date) - new Date(b.date));
       expect(comment1Replies[0].id).toBe("reply-1");
