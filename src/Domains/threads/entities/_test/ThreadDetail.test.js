@@ -184,7 +184,7 @@ describe("ThreadDetail entities", () => {
       expect(threadDetail.id).toEqual(payload.id);
       expect(threadDetail.title).toEqual(payload.title);
       expect(threadDetail.body).toEqual(payload.body);
-      expect(threadDetail.date).toEqual(dateObject);
+      expect(threadDetail.date).toEqual(dateObject.toISOString());
       expect(threadDetail.username).toEqual(payload.username);
       expect(threadDetail.comments).toEqual(payload.comments);
     });

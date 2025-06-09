@@ -160,7 +160,7 @@ describe("ReplyDetail entities", () => {
       // Assert
       expect(replyDetail.id).toEqual(payload.id);
       expect(replyDetail.username).toEqual(payload.username);
-      expect(replyDetail.date).toEqual(dateObject);
+      expect(replyDetail.date).toEqual(dateObject.toISOString());
       expect(replyDetail.content).toEqual(payload.content);
     });
 
