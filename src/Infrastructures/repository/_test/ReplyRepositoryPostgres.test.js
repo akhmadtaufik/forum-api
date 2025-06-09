@@ -350,15 +350,10 @@ describe("ReplyRepositoryPostgres", () => {
         ]);
 
       // Pre-process dates to ISO strings for comparison
-      const processedReplies = repliesFromRepo.map((reply) => {
-        // Ensure reply.date is a Date object before calling toISOString
-        const dateValue =
-          typeof reply.date === "string" ? new Date(reply.date) : reply.date;
-        return {
-          ...reply,
-          date: dateValue.toISOString(),
-        };
-      });
+      const processedReplies = repliesFromRepo.map((reply) => ({
+        ...reply,
+        date: new Date(reply.date).toISOString(),
+      }));
 
       // Assert
       expect(processedReplies).toHaveLength(3);
