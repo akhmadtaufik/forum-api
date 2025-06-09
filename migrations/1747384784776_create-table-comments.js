@@ -21,7 +21,7 @@ exports.up = (pgm) => {
       onDelete: "CASCADE", // If the thread is deleted, its comments are also deleted
     },
     date: {
-      type: "TIMESTAMP",
+      type: "TIMESTAMPTZ",
       notNull: true,
       default: pgm.func("current_timestamp"),
     },

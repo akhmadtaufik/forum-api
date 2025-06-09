@@ -19,7 +19,7 @@ exports.up = (pgm) => {
       onDelete: "CASCADE", // If the user is deleted, their threads are also deleted
     },
     date: {
-      type: "TIMESTAMP",
+      type: "TIMESTAMPTZ",
       notNull: true,
       default: pgm.func("current_timestamp"),
     },
