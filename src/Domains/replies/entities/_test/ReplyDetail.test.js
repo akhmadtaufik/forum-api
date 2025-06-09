@@ -181,5 +181,26 @@ describe("ReplyDetail entities", () => {
       expect(replyDetail.date).toEqual(payload.date);
       expect(replyDetail.content).toEqual("**balasan telah dihapus**");
     });
+
+    it("should correctly process date when it is a Date instance, matching specific ISO string", () => {
+      // Arrange
+      const specificDateString = "2025-05-21T00:00:00.000Z";
+      const dateInstance = new Date(specificDateString);
+      const payloadWithDateInstance = {
+        ...basePayload,
+        date: dateInstance,
+        isDeleted: false,
+      };
+
+      // Action
+      const replyDetail = new ReplyDetail(payloadWithDateInstance);
+
+      // Assert
+      expect(replyDetail.date).toBe(dateInstance.toISOString());
+      expect(replyDetail.date).toBe(specificDateString);
+      expect(replyDetail.id).toBe(basePayload.id);
+      expect(replyDetail.username).toBe(basePayload.username);
+      expect(replyDetail.content).toBe(basePayload.content); // Content should not be masked
+    });
   });
 });

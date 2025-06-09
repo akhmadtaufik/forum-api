@@ -188,5 +188,23 @@ describe("ThreadDetail entities", () => {
       expect(threadDetail.username).toEqual(payload.username);
       expect(threadDetail.comments).toEqual(payload.comments);
     });
+
+    it("should correctly process date when it is a Date instance, matching specific ISO string", () => {
+      // Arrange
+      const specificDateString = "2025-05-19T07:19:09.775Z";
+      const dateInstance = new Date(specificDateString);
+      const payloadWithDateInstance = {
+        ...basePayload,
+        date: dateInstance,
+        comments: [],
+      }; // Ensure comments is present
+
+      // Action
+      const threadDetail = new ThreadDetail(payloadWithDateInstance);
+
+      // Assert
+      expect(threadDetail.date).toBe(dateInstance.toISOString());
+      expect(threadDetail.date).toBe(specificDateString);
+    });
   });
 });

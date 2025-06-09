@@ -220,4 +220,28 @@ describe("CommentDetail entities", () => {
     expect(commentDetail.content).toEqual("**komentar telah dihapus**");
     expect(commentDetail.replies).toEqual(payload.replies); // Check replies are passed through
   });
+
+  it("should correctly process date when it is a Date instance, matching specific ISO string", () => {
+    // Arrange
+    const specificDateString = "2025-05-19T07:22:33.555Z";
+    const dateInstance = new Date(specificDateString);
+    const basePayload = {
+      id: "comment-xyz",
+      username: "testuser",
+      content: "A test comment",
+      replies: [], // Ensure replies is an array
+    };
+    const payloadWithDateInstance = { ...basePayload, date: dateInstance };
+
+    // Action
+    const commentDetail = new CommentDetail(payloadWithDateInstance);
+
+    // Assert
+    expect(commentDetail.date).toBe(dateInstance.toISOString());
+    expect(commentDetail.date).toBe(specificDateString);
+    expect(commentDetail.id).toBe(basePayload.id);
+    expect(commentDetail.username).toBe(basePayload.username);
+    expect(commentDetail.content).toBe(basePayload.content);
+    expect(commentDetail.replies).toEqual(basePayload.replies);
+  });
 });
