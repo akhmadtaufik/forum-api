@@ -1,6 +1,7 @@
-require('dotenv').config();
-const createServer = require('./Infrastructures/http/createServer');
-const container = require('./Infrastructures/container');
+require("dotenv").config();
+process.env.TZ = "UTC"; // Set timezone to UTC for the application
+const createServer = require("./Infrastructures/http/createServer");
+const container = require("./Infrastructures/container");
 
 (async () => {
   const server = await createServer(container);
