@@ -3,5 +3,7 @@ postman_test
 package-lock.json
 .idea
 config/database/test.json
+config/database/prod.json
 coverage
 .env
+forum-api-webserver.pem
