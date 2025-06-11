@@ -37,11 +37,11 @@ jobs:
           echo '  "database": "${{ vars.DB_DBNAME_TEST }}"' >> config/database/test.json
           echo '}' >> config/database/test.json
 
-      - name: Build Docker images
-        run: docker-compose build api
+      - name: Build and Run Container
+        run: sudo docker compose up api --build --detach
 
       - name: Run database migrations for test environment (on RDS)
-        run: docker-compose run --rm api npm run migrate:test
+        run: sudo docker compose --rm api npm run migrate:test
 
       - name: Run tests (Unit, Integration, Functional)
-        run: docker-compose run --rm api npm run test
+        run: sudo docker compose --rm api npm run test
