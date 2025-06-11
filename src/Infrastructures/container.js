@@ -35,6 +35,7 @@ const CommentRepository = require("../Domains/comments/CommentRepository");
 const CommentRepositoryPostgres = require("../Infrastructures/repository/CommentRepositoryPostgres");
 const AddCommentUseCase = require("../Applications/use_case/AddCommentUseCase");
 const DeleteCommentUseCase = require("../Applications/use_case/DeleteCommentUseCase");
+const LikeUnlikeCommentUseCase = require("../Applications/use_case/LikeUnlikeCommentUseCase");
 
 // For replies
 const ReplyRepository = require("../Domains/replies/ReplyRepository");
@@ -311,6 +312,23 @@ container.register([
           name: "replyRepository",
           internal: ReplyRepository.name,
         },
+        {
+          name: "commentRepository",
+          internal: CommentRepository.name,
+        },
+        {
+          name: "threadRepository",
+          internal: ThreadRepository.name,
+        },
+      ],
+    },
+  },
+  {
+    key: LikeUnlikeCommentUseCase.name,
+    Class: LikeUnlikeCommentUseCase,
+    parameter: {
+      injectType: "destructuring",
+      dependencies: [
         {
           name: "commentRepository",
           internal: CommentRepository.name,
