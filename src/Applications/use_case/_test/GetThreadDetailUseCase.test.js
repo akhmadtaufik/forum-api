@@ -21,6 +21,7 @@ describe("GetThreadDetailUseCase", () => {
       username: "repoUser",
     };
 
+    // Mock comments
     const mockRawCommentsData = [
       {
         id: "comment-repo-1",
@@ -38,6 +39,13 @@ describe("GetThreadDetailUseCase", () => {
       },
     ];
 
+    // Mock like counts for comments
+    const mockLikeCounts = {
+      "comment-repo-1": 5,
+      "comment-repo-2": 0,
+    };
+
+    // Mock replies
     const mockRawRepliesData = [
       {
         id: "reply-repo-A",
@@ -78,6 +86,7 @@ describe("GetThreadDetailUseCase", () => {
         content: rawComment.content,
         isDeleted: rawComment.is_deleted,
         replies: processedReplies,
+        likeCount: mockLikeCounts[rawComment.id],
       });
     });
 
@@ -103,6 +112,11 @@ describe("GetThreadDetailUseCase", () => {
     mockCommentRepository.getCommentsByThreadId = jest
       .fn()
       .mockResolvedValue(mockRawCommentsData);
+    mockCommentRepository.getCommentLikesCountByCommentId = jest
+      .fn()
+      .mockImplementation((commentId) =>
+        Promise.resolve(mockLikeCounts[commentId])
+      );
     mockReplyRepository.getRepliesByCommentIds = jest
       .fn()
       .mockResolvedValue(mockRawRepliesData);
@@ -129,11 +143,13 @@ describe("GetThreadDetailUseCase", () => {
       useCaseThreadId
     );
 
+    // Verify getThreadById
     expect(mockThreadRepository.getThreadById).toHaveBeenCalledTimes(1);
     expect(mockThreadRepository.getThreadById).toHaveBeenCalledWith(
       useCaseThreadId
     );
 
+    // Verify getCommentsByThreadId
     expect(mockCommentRepository.getCommentsByThreadId).toHaveBeenCalledTimes(
       1
     );
@@ -141,6 +157,7 @@ describe("GetThreadDetailUseCase", () => {
       useCaseThreadId
     );
 
+    // Verify getRepliesByCommentIds
     const expectedCommentIdsForRepoCall = mockRawCommentsData.map(
       (comment) => comment.id
     );
@@ -148,12 +165,23 @@ describe("GetThreadDetailUseCase", () => {
     expect(mockReplyRepository.getRepliesByCommentIds).toHaveBeenCalledWith(
       expectedCommentIdsForRepoCall
     );
+
+    // Verify getCommentLikesCountByCommentId calls
+    expect(
+      mockCommentRepository.getCommentLikesCountByCommentId
+    ).toHaveBeenCalledTimes(mockRawCommentsData.length);
+    for (const comment of mockRawCommentsData) {
+      expect(
+        mockCommentRepository.getCommentLikesCountByCommentId
+      ).toHaveBeenCalledWith(comment.id);
+    }
   });
 
   it("should orchestrating the get thread detail action correctly when no comments exist", async () => {
     // Arrange
     const useCaseThreadId = "thread-no-comments";
 
+    // Construct mock data
     const mockRawThreadData = {
       id: useCaseThreadId,
       title: "Mock Thread No Comments",
@@ -169,10 +197,12 @@ describe("GetThreadDetailUseCase", () => {
       comments: [], // Expect empty array for comments
     });
 
+    /** creating dependency of use case */
     const mockThreadRepository = new ThreadRepository();
     const mockCommentRepository = new CommentRepository();
     const mockReplyRepository = new ReplyRepository();
 
+    /** mocking needed function */
     mockThreadRepository.verifyThreadExists = jest.fn().mockResolvedValue();
     mockThreadRepository.getThreadById = jest
       .fn()
@@ -182,6 +212,7 @@ describe("GetThreadDetailUseCase", () => {
       .mockResolvedValue(mockRawCommentsDataEmpty);
     mockReplyRepository.getRepliesByCommentIds = jest.fn();
 
+    /** creating use case instance */
     const getThreadDetailUseCase = new GetThreadDetailUseCase({
       threadRepository: mockThreadRepository,
       commentRepository: mockCommentRepository,
