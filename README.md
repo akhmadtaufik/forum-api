@@ -293,6 +293,3 @@ npm run test:watch # Watches all files and includes coverage
   - Authentication: Required (Bearer Token).
   - Path Parameters: `threadId` (string), `commentId` (string), `replyId` (string)
   - Response: `{ "status": "success" }`
-
----
-This README provides a comprehensive guide to understanding, setting up, and using the Forum API.
