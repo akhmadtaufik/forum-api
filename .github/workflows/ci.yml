@@ -1,4 +1,4 @@
-name: Forum API CI (Docker Compose with RDS)
+name: Continuous Integration (Docker Compose with RDS)
 
 on:
   pull_request:
@@ -52,6 +52,23 @@ jobs:
         run: |
           sudo docker compose up --build --detach
 
+      - name: Debug container status
+        if: ${{ failure() }}
+        run: |
+          echo "=== Docker Container Status ==="
+          sudo docker ps -a
+          echo "=== Container Logs ==="
+          sudo docker logs forum-api
+          echo "=== Environment Check ==="
+          sudo docker exec forum-api bash -c "env | grep -E '(POSTGRES|NODE)'"
+
       - name: Run tests (Unit, Integration, Functional)
         run: |
+          sleep 30
           sudo docker exec forum-api bash -c "npm run test"
+
+      - name: Setup tmate session for debugging
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ failure() }}
+        with:
+          limit-access-to-actor: true
