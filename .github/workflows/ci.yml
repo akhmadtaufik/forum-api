@@ -17,6 +17,7 @@ jobs:
           echo "# HTTP SERVER" > .env
           echo "HOST=localhost" >> .env
           echo "PORT=${{ secrets.APP_PORT }}" >> .env
+          echo "" >> .env
 
           echo "# Database Production" >> .env
           echo "POSTGRES_USER=${{ secrets.DB_USER }}" >> .env
@@ -24,6 +25,7 @@ jobs:
           echo "POSTGRES_DB=${{ vars.DB_DBNAME }}" >> .env
           echo "POSTGRES_HOST=${{ secrets.DB_HOST }}" >> .env
           echo "POSTGRES_PORT=${{ secrets.DB_PORT }}" >> .env
+          echo "" >> .env
 
           echo "# Database Test"
           echo "POSTGRES_USER_TEST=${{ secrets.DB_USER_TEST }}" >> .env
@@ -31,6 +33,7 @@ jobs:
           echo "POSTGRES_DB_TEST=${{ vars.DB_DBNAME_TEST }}" >> .env
           echo "POSTGRES_HOST_TEST=${{ secrets.DB_HOST_TEST }}" >> .env
           echo "POSTGRES_PORT_TEST=${{ secrets.DB_PORT_TEST }}" >> .env
+          echo "" >> .env
 
           echo "# JWT Token" >> .env
           echo "ACCESS_TOKEN_KEY=${{ secrets.APP_ACCESS_TOKEN_KEY }}" >> .env
@@ -48,6 +51,43 @@ jobs:
           echo '  "database": "${{ vars.DB_DBNAME_TEST }}"' >> config/database/test.json
           echo '}' >> config/database/test.json
 
+      - name: Test database connectivity before Docker
+        run: |
+          echo "=== Testing database connectivity from GitHub Actions runner ==="
+
+          # Install PostgreSQL client
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+          echo "Testing production database connection..."
+          timeout 30 bash -c "
+            PGPASSWORD='${{ secrets.DB_PASSWORD }}' psql \
+              -h '${{ secrets.DB_HOST }}' \
+              -p '${{ secrets.DB_PORT }}' \
+              -U '${{ secrets.DB_USER }}' \
+              -d '${{ vars.DB_DBNAME }}' \
+              -c 'SELECT version();' 2>&1
+          " || echo "Production database connection failed"
+
+          echo "Testing test database connection..."
+          timeout 30 bash -c "
+            PGPASSWORD='${{ secrets.DB_PASSWORD_TEST }}' psql \
+              -h '${{ secrets.DB_HOST_TEST }}' \
+              -p '${{ secrets.DB_PORT_TEST }}' \
+              -U '${{ secrets.DB_USER_TEST }}' \
+              -d '${{ vars.DB_DBNAME_TEST }}' \
+              -c 'SELECT version();' 2>&1
+          " || echo "Test database connection failed"
+
+          echo "=== Network debugging ==="
+          echo "Checking DNS resolution..."
+          nslookup "${{ secrets.DB_HOST }}" || echo "DNS resolution failed for production host"
+          nslookup "${{ secrets.DB_HOST_TEST }}" || echo "DNS resolution failed for test host"
+
+          echo "Checking port connectivity..."
+          timeout 10 nc -zv "${{ secrets.DB_HOST }}" "${{ secrets.DB_PORT }}" || echo "Port ${{ secrets.DB_PORT }} not reachable on production host"
+          timeout 10 nc -zv "${{ secrets.DB_HOST_TEST }}" "${{ secrets.DB_PORT_TEST }}" || echo "Port ${{ secrets.DB_PORT_TEST }} not reachable on test host"
+
       - name: Build and Run Container
         run: |
           sudo docker compose up --build --detach
@@ -63,6 +103,20 @@ jobs:
           echo "=== Container Logs ==="
           sudo docker logs forum-api
 
+          echo "=== Container Network Info ==="
+          sudo docker exec forum-api bash -c "
+            echo 'Container IP and network info:'
+            ip addr show
+            echo ''
+            echo 'DNS resolution test from container:'
+            nslookup \$PGHOST || echo 'DNS failed for production'
+            nslookup \$PGHOST_TEST || echo 'DNS failed for test'
+            echo ''
+            echo 'Port connectivity test from container:'
+            timeout 10 nc -zv \$PGHOST \$PGPORT || echo 'Production port not reachable from container'
+            timeout 10 nc -zv \$PGHOST_TEST \$PGPORT_TEST || echo 'Test port not reachable from container'
+          " 2>/dev/null || echo "Container network debugging failed"
+
           echo "=== Container Health Check ==="
           if sudo docker ps | grep -q forum-api; then
             echo "Container is running"
@@ -74,8 +128,14 @@ jobs:
 
       - name: Run tests (Unit, Integration, Functional)
         run: |
-          sleep 30
+          echo "Running tests..."
           sudo docker exec forum-api bash -c "npm run test"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          sudo docker compose down
+          sudo docker system prune -f
 
       - name: Setup tmate session for debugging
         uses: mxschmitt/action-tmate@v3
