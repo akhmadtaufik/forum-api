@@ -1,0 +1,48 @@
+name: Continuous Deployment (Deploy to EC2 🚀)
+
+on:
+  push:
+    branches:
+      - main
+      - dev-ops
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Execute deployment command
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          APP_PATH: ${{ vars.APP_PATH }}
+          GIT_URL: ${{ vars.GIT_URL }}
+          PGHOST: ${{ secrets.DB_USER }}
+          PGUSER: ${{ secrets.DB_PASSWORD }}
+          PGDATABASE: ${{ vars.DB_DBNAME }}
+          PGPASSWORD: ${{ secrets.DB_HOST }}
+          PGPORT: ${{ secrets.DB_PORT }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER_NAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: APP_PATH,GIT_URL,PGHOST,PGUSER,PGDATABASE,PGPASSWORD,PGPORT
+          script: |
+            if [[ -d "home/ubuntu/${APP_PATH}" ]]; then
+              cd home/ubuntu/$APP_PATH
+              git pull --rebase
+            else
+              ssh-keyscan github.com > ~/.ssh/known_hosts
+              git clone $GIT_URL home/ubuntu/$APP_PATH
+              cd home/ubuntu/$APP_PATH
+            fi
+
+            # If there are any envars update
+            echo "PGHOST=$PGHOST" > .env
+            echo "PGUSER=$PGUSER" >> .env
+            echo "PGDATABASE=$PGDATABASE" >> .env
+            echo "PGPASSWORD=$PGPASSWORD" >> .env
+            echo "PGPORT=$PGPORT" >> .env
+
+            # Run app
+            sudo docker compose --env-file .env up --build --detach
