@@ -21,8 +21,8 @@ services:
       PGDATABASE: "${PGDATABASE}"
       # Database test (untuk referensi dalam aplikasi)
       PGUSER_TEST: "${PGUSER_TEST}"
-      PGPASSWORD_TEST: "${PGUSER_PASS}"
-      PGHOST_TEST: "postgres-test"
+      PGPASSWORD_TEST: "${PGPASSWORD_TEST}"
+      PGHOST_TEST: "PGHOST_TEST"
       PGPORT_TEST: "${PGPORT_TEST}"
       PGDATABASE_TEST: "${PGDATABASE_TEST}"
       # JWT Token
@@ -33,8 +33,22 @@ services:
       - .env
     command: >
       sh -c "
-        npm run migrate:test up &&
-        npm run migrate up &&
+        echo 'Starting container...' &&
+        echo 'Checking database connection...' &&
+        until nc -z $${PGHOST_TEST} $${PGPORT_TEST}; do
+          echo 'Waiting for test database to be ready...'
+          sleep 2
+        done &&
+        echo 'Test database is ready!' &&
+        until nc -z $${PGHOST} $${PGPORT}; do
+          echo 'Waiting for production database to be ready...'
+          sleep 2
+        done &&
+        echo 'Production database is ready!' &&
+        echo 'Running migrations (ignoring errors if tables exist)...' &&
+        (npm run migrate:test up || echo 'Test migration failed or already applied') &&
+        (npm run migrate up || echo 'Production migration failed or already applied') &&
+        echo 'Starting application...' &&
         npm run start"
     networks:
       - forum-network
