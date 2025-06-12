@@ -34,9 +34,12 @@ services:
     command: >
       sh -c "
         echo 'Starting container...' &&
-        echo 'Running migrations (ignoring errors if tables exist)...' &&
-        (npm run migrate:test up || echo 'Test migration failed or already applied') &&
-        (npm run migrate up || echo 'Production migration failed or already applied') &&
+        echo 'Testing database connections...' &&
+        (timeout 10 nc -zv \$PGHOST \$PGPORT && echo 'Production DB port reachable' || echo 'Production DB port not reachable') &&
+        (timeout 10 nc -zv \$PGHOST_TEST \$PGPORT_TEST && echo 'Test DB port reachable' || echo 'Test DB port not reachable') &&
+        echo 'Running migrations...' &&
+        (npm run migrate:test up || echo 'Test migration failed') &&
+        (npm run migrate up || echo 'Production migration failed') &&
         echo 'Starting application...' &&
         npm run start"
     networks:
