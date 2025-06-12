@@ -59,13 +59,28 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
+          echo "Creating databases if they don't exist..."
+          echo "Creating production database forumapi..."
+          PGPASSWORD='${{ secrets.DB_PASSWORD }}' createdb \
+            -h '${{ secrets.DB_HOST }}' \
+            -p '${{ secrets.DB_PORT }}' \
+            -U '${{ secrets.DB_USER }}' \
+            'forumapi' 2>/dev/null || echo "Production database already exists or creation failed"
+
+          echo "Creating test database forumapi_test..."
+          PGPASSWORD='${{ secrets.DB_PASSWORD_TEST }}' createdb \
+            -h '${{ secrets.DB_HOST_TEST }}' \
+            -p '${{ secrets.DB_PORT_TEST }}' \
+            -U '${{ secrets.DB_USER_TEST }}' \
+            'forumapi_test' 2>/dev/null || echo "Test database already exists or creation failed"
+
           echo "Testing production database connection..."
           timeout 30 bash -c "
             PGPASSWORD='${{ secrets.DB_PASSWORD }}' psql \
               -h '${{ secrets.DB_HOST }}' \
               -p '${{ secrets.DB_PORT }}' \
               -U '${{ secrets.DB_USER }}' \
-              -d '${{ vars.DB_DBNAME }}' \
+              -d 'forumapi' \
               -c 'SELECT version();' 2>&1
           " || echo "Production database connection failed"
 
@@ -75,18 +90,9 @@ jobs:
               -h '${{ secrets.DB_HOST_TEST }}' \
               -p '${{ secrets.DB_PORT_TEST }}' \
               -U '${{ secrets.DB_USER_TEST }}' \
-              -d '${{ vars.DB_DBNAME_TEST }}' \
+              -d 'forumapi_test' \
               -c 'SELECT version();' 2>&1
           " || echo "Test database connection failed"
-
-          echo "=== Network debugging ==="
-          echo "Checking DNS resolution..."
-          nslookup "${{ secrets.DB_HOST }}" || echo "DNS resolution failed for production host"
-          nslookup "${{ secrets.DB_HOST_TEST }}" || echo "DNS resolution failed for test host"
-
-          echo "Checking port connectivity..."
-          timeout 10 nc -zv "${{ secrets.DB_HOST }}" "${{ secrets.DB_PORT }}" || echo "Port ${{ secrets.DB_PORT }} not reachable on production host"
-          timeout 10 nc -zv "${{ secrets.DB_HOST_TEST }}" "${{ secrets.DB_PORT_TEST }}" || echo "Port ${{ secrets.DB_PORT_TEST }} not reachable on test host"
 
       - name: Build and Run Container
         run: |
