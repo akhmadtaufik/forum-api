@@ -17,10 +17,10 @@ jobs:
         env:
           APP_PATH: ${{ vars.APP_PATH }}
           GIT_URL: ${{ vars.GIT_URL }}
-          PGHOST: ${{ secrets.DB_USER }}
-          PGUSER: ${{ secrets.DB_PASSWORD }}
+          PGHOST: ${{ secrets.DB_HOST }}
+          PGUSER: ${{ secrets.DB_USER }}
           PGDATABASE: ${{ vars.DB_DBNAME }}
-          PGPASSWORD: ${{ secrets.DB_HOST }}
+          PGPASSWORD: ${{ secrets.DB_PASSWORD }}
           PGPORT: ${{ secrets.DB_PORT }}
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -28,21 +28,83 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: APP_PATH,GIT_URL,PGHOST,PGUSER,PGDATABASE,PGPASSWORD,PGPORT
           script: |
-            if [[ -d "home/ubuntu/${APP_PATH}" ]]; then
-              cd home/ubuntu/$APP_PATH
-              git pull --rebase
+            set -ex # Exit on error, print commands
+
+            echo "--- DIAGNOSTICS ---"
+            echo "User: $(whoami)"
+            echo "Sudo User: $(sudo whoami)"
+            echo "PATH: $PATH"
+            echo "Sudo PATH: $(sudo echo $PATH)"
+
+            # Check for Docker and Docker Compose
+            if ! command -v docker &> /dev/null || ! docker compose version &> /dev/null; then
+              echo "Docker or Docker Compose not found. Attempting installation..."
+              
+              # Update package lists
+              sudo apt-get update -y
+              
+              # Install prerequisites
+              sudo apt-get install -y ca-certificates curl gnupg
+              
+              # Add Docker's official GPG key
+              sudo install -m 0755 -d /etc/apt/keyrings
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+              sudo chmod a+r /etc/apt/keyrings/docker.gpg
+              
+              # Set up Docker repository
+              echo \
+                "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+                $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+                sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+              
+              # Update package lists again after adding new repo
+              sudo apt-get update -y
+              
+              # Install Docker Engine, CLI, Containerd, Buildx, and Compose plugin
+              sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+              echo "Docker installation attempt finished."
             else
-              ssh-keyscan github.com > ~/.ssh/known_hosts
-              git clone $GIT_URL home/ubuntu/$APP_PATH
-              cd home/ubuntu/$APP_PATH
+              echo "Docker and Docker Compose already installed."
             fi
 
-            # If there are any envars update
+            echo "--- Docker Version Info ---"
+            which docker
+            docker --version
+            which docker compose || echo "docker compose (plugin) not found via which, checking version directly"
+            docker compose version || echo "docker compose version command failed"
+
+            # Define the application directory path
+            # Assuming SSH_USER_NAME is 'ubuntu' and APP_PATH is a directory name like 'my-app'
+            # The target directory will be /home/ubuntu/my-app
+            TARGET_DIR="/home/${{ secrets.SSH_USER_NAME }}/${APP_PATH}"
+
+            echo "--- GIT OPERATIONS for $TARGET_DIR ---"
+            if [[ -d "$TARGET_DIR" ]]; then
+              echo "Directory $TARGET_DIR exists. Pulling latest changes."
+              cd "$TARGET_DIR"
+              git pull --rebase
+            else
+              echo "Directory $TARGET_DIR does not exist. Cloning repository."
+              # Ensure parent directory exists if needed, though /home/user should exist
+              mkdir -p "$(dirname "$TARGET_DIR")" # Should not be necessary for /home/user/app_path
+              # Add GitHub to known hosts to avoid interactive prompt
+              ssh-keyscan github.com >> ~/.ssh/known_hosts || true # Allow failure if already exists
+              git clone "$GIT_URL" "$TARGET_DIR"
+              cd "$TARGET_DIR"
+            fi
+
+            echo "--- ENVIRONMENT SETUP for $TARGET_DIR/.env ---"
+            # Create/overwrite .env file with deployment-specific variables
             echo "PGHOST=$PGHOST" > .env
             echo "PGUSER=$PGUSER" >> .env
             echo "PGDATABASE=$PGDATABASE" >> .env
             echo "PGPASSWORD=$PGPASSWORD" >> .env
             echo "PGPORT=$PGPORT" >> .env
 
-            # Run app
+            echo "--- DOCKER COMPOSE ---"
+            # Run app using Docker Compose
+            # The --env-file flag tells Docker Compose to use the .env file in the current directory (TARGET_DIR)
             sudo docker compose --env-file .env up --build --detach
+
+            echo "--- DEPLOYMENT SCRIPT FINISHED ---"
