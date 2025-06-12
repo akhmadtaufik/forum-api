@@ -15,7 +15,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "# HTTP SERVER" > .env
-          echo "HOST=${{ vars.DEV_URL }}" >> .env
+          echo "HOST=localhost" >> .env
           echo "PORT=${{ secrets.APP_PORT }}" >> .env
 
           echo "# Database Production" >> .env

@@ -34,17 +34,6 @@ services:
     command: >
       sh -c "
         echo 'Starting container...' &&
-        echo 'Checking database connection...' &&
-        until nc -z $${PGHOST_TEST} $${PGPORT_TEST}; do
-          echo 'Waiting for test database to be ready...'
-          sleep 2
-        done &&
-        echo 'Test database is ready!' &&
-        until nc -z $${PGHOST} $${PGPORT}; do
-          echo 'Waiting for production database to be ready...'
-          sleep 2
-        done &&
-        echo 'Production database is ready!' &&
         echo 'Running migrations (ignoring errors if tables exist)...' &&
         (npm run migrate:test up || echo 'Test migration failed or already applied') &&
         (npm run migrate up || echo 'Production migration failed or already applied') &&
