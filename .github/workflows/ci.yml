@@ -53,4 +53,5 @@ jobs:
           sudo docker compose up --build --detach
 
       - name: Run tests (Unit, Integration, Functional)
-        run: docker-compose run --rm api npm run test
+        run: |
+          sudo docker exec forum-api bash -c "npm run test"
