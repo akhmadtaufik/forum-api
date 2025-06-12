@@ -51,6 +51,16 @@ jobs:
           echo '  "database": "${{ vars.DB_DBNAME_TEST }}"' >> config/database/test.json
           echo '}' >> config/database/test.json
 
+      - name: Create database migration config file for production
+        run: |
+          echo '{' > config/database/prod.json
+          echo '  "user": "${{ secrets.DB_USER }}",' >> config/database/prod.json
+          echo '  "password": "${{ secrets.DB_PASSWORD }}",' >> config/database/prod.json
+          echo '  "host": "${{ secrets.DB_HOST }}",' >> config/database/prod.json
+          echo '  "port": ${{ secrets.DB_PORT }},' >> config/database/prod.json
+          echo '  "database": "${{ vars.DB_DBNAME }}"' >> config/database/prod.json
+          echo '}' >> config/database/database.json
+
       - name: Test database connectivity before Docker
         run: |
           echo "=== Testing database connectivity from GitHub Actions runner ==="
@@ -96,7 +106,7 @@ jobs:
 
       - name: Build and Run Container
         run: |
-          sudo docker compose up --env-file .env --build --detach
+          sudo docker compose --env-file .env up --build --detach
 
       - name: Wait for container and check status
         run: |
