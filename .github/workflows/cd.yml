@@ -24,11 +24,6 @@ jobs:
           PGDATABASE: ${{ vars.DB_DBNAME }}
           PGPASSWORD: ${{ secrets.DB_PASSWORD }}
           PGPORT: ${{ secrets.DB_PORT }}
-          PGHOST_TEST: ${{ secrets.DB_HOST_TEST }}
-          PGUSER_TEST: ${{ secrets.DB_USER_TEST }}
-          PGDATABASE_TEST: ${{ vars.DB_DBNAME_TEST }}
-          PGPASSWORD_TEST: ${{ secrets.DB_PASSWORD_TEST }}
-          PGPORT_TEST: ${{ secrets.DB_PORT_TEST }}
           ACCESS_TOKEN_KEY: ${{ secrets.APP_ACCESS_TOKEN_KEY }}
           REFRESH_TOKEN_KEY: ${{ secrets.APP_REFRESH_TOKEN_KEY }}
           ACCCESS_TOKEN_AGE: ${{ secrets.APP_ACCCESS_TOKEN_AGE }}
@@ -36,7 +31,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER_NAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: APP_PATH,GIT_URL,HOST,PORT,PGHOST,PGUSER,PGDATABASE,PGPASSWORD,PGPORT,PGHOST_TEST,PGUSER_TEST,PGDATABASE_TEST,PGPASSWORD_TEST,PGPORT_TEST,ACCESS_TOKEN_KEY,REFRESH_TOKEN_KEY,ACCCESS_TOKEN_AGE
+          envs: APP_PATH,GIT_URL,HOST,PORT,PGHOST,PGUSER,PGDATABASE,PGPASSWORD,PGPORT,ACCESS_TOKEN_KEY,REFRESH_TOKEN_KEY,ACCCESS_TOKEN_AGE
           script: |
             # Check for Docker and Docker Compose
             if ! command -v docker &> /dev/null || ! docker compose version &> /dev/null; then
@@ -101,7 +96,8 @@ jobs:
 
             echo "--- DOCKER COMPOSE ---"
             # Run app using Docker Compose
-            sudo docker compose --env-file .env up --build --detach
+            sudo docker compose down
+            sudo docker compose --env-file .env up api-prod --build --detach
 
             echo "--- DEPLOYMENT SCRIPT FINISHED ---"
 
