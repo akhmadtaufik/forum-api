@@ -17,25 +17,22 @@ jobs:
         env:
           APP_PATH: ${{ vars.APP_PATH }}
           GIT_URL: ${{ vars.GIT_URL }}
+          HOST: ${{secrets.APP_URL}}
+          PORT: ${{secrets.APP_PORT}}
           PGHOST: ${{ secrets.DB_HOST }}
           PGUSER: ${{ secrets.DB_USER }}
           PGDATABASE: ${{ vars.DB_DBNAME }}
           PGPASSWORD: ${{ secrets.DB_PASSWORD }}
           PGPORT: ${{ secrets.DB_PORT }}
+          ACCESS_TOKEN_KEY: ${{ secrets.APP_ACCESS_TOKEN_KEY }}
+          REFRESH_TOKEN_KEY: ${{ secrets.APP_REFRESH_TOKEN_KEY }}
+          ACCCESS_TOKEN_AGE: ${{ secrets.APP_ACCCESS_TOKEN_AGE }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER_NAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: APP_PATH,GIT_URL,PGHOST,PGUSER,PGDATABASE,PGPASSWORD,PGPORT
           script: |
-            set -ex # Exit on error, print commands
-
-            echo "--- DIAGNOSTICS ---"
-            echo "User: $(whoami)"
-            echo "Sudo User: $(sudo whoami)"
-            echo "PATH: $PATH"
-            echo "Sudo PATH: $(sudo echo $PATH)"
-
             # Check for Docker and Docker Compose
             if ! command -v docker &> /dev/null || ! docker compose version &> /dev/null; then
               echo "Docker or Docker Compose not found. Attempting installation..."
@@ -75,26 +72,16 @@ jobs:
             docker compose version || echo "docker compose version command failed"
 
             # Define the application directory path
-            # Assuming SSH_USER_NAME is 'ubuntu' and APP_PATH is a directory name like 'my-app'
-            # The target directory will be /home/ubuntu/my-app
-            TARGET_DIR="/home/${{ secrets.SSH_USER_NAME }}/${APP_PATH}"
-
-            echo "--- GIT OPERATIONS for $TARGET_DIR ---"
-            if [[ -d "$TARGET_DIR" ]]; then
-              echo "Directory $TARGET_DIR exists. Pulling latest changes."
-              cd "$TARGET_DIR"
+            if [[ -d "/home/ubuntu/${APP_PATH}" ]]; then 
+              cd /home/ubuntu/$APP_PATH
+              sudo docker compose down
               git pull --rebase
             else
-              echo "Directory $TARGET_DIR does not exist. Cloning repository."
-              # Ensure parent directory exists if needed, though /home/user should exist
-              mkdir -p "$(dirname "$TARGET_DIR")" # Should not be necessary for /home/user/app_path
-              # Add GitHub to known hosts to avoid interactive prompt
-              ssh-keyscan github.com >> ~/.ssh/known_hosts || true # Allow failure if already exists
-              git clone "$GIT_URL" "$TARGET_DIR"
-              cd "$TARGET_DIR"
+              ssh-keyscan github.com > ~/.ssh/known_hosts
+              git clone $GIT_URL /home/ubuntu/$APP_PATH
+              cd /home/ubuntu/$APP_PATH
             fi
 
-            echo "--- ENVIRONMENT SETUP for $TARGET_DIR/.env ---"
             # Create/overwrite .env file with deployment-specific variables
             echo "PGHOST=$PGHOST" > .env
             echo "PGUSER=$PGUSER" >> .env
@@ -104,7 +91,6 @@ jobs:
 
             echo "--- DOCKER COMPOSE ---"
             # Run app using Docker Compose
-            # The --env-file flag tells Docker Compose to use the .env file in the current directory (TARGET_DIR)
             sudo docker compose --env-file .env up --build --detach
 
             echo "--- DEPLOYMENT SCRIPT FINISHED ---"
