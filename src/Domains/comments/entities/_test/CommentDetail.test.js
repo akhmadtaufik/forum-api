@@ -1,12 +1,13 @@
 const CommentDetail = require("../CommentDetail");
 
 describe("CommentDetail entities", () => {
-  const basePayloadForMissingTests = {
+  const basePayload = {
     id: "comment-123",
     username: "user123",
     date: "2025-05-19T07:22:33.555Z",
     content: "sebuah comment",
     replies: [],
+    likeCount: 0,
   };
 
   it("should throw error when payload did not contain needed property (missing content)", () => {
@@ -16,6 +17,7 @@ describe("CommentDetail entities", () => {
       username: "user123",
       date: "2025-05-19T07:22:33.555Z",
       // content property is missing
+      likeCount: 0,
     };
 
     // Action and Assert
@@ -26,7 +28,7 @@ describe("CommentDetail entities", () => {
 
   it("should throw error when payload did not contain needed property (missing id)", () => {
     // Arrange
-    const payload = { ...basePayloadForMissingTests };
+    const payload = { ...basePayload };
     delete payload.id;
 
     // Action and Assert
@@ -37,7 +39,7 @@ describe("CommentDetail entities", () => {
 
   it("should throw error when payload did not contain needed property (missing username)", () => {
     // Arrange
-    const payload = { ...basePayloadForMissingTests };
+    const payload = { ...basePayload };
     delete payload.username;
 
     // Action and Assert
@@ -48,13 +50,25 @@ describe("CommentDetail entities", () => {
 
   it("should throw error when payload did not contain needed property (missing date)", () => {
     // Arrange
-    const payload = { ...basePayloadForMissingTests };
+    const payload = { ...basePayload };
     delete payload.date;
 
     // Action and Assert
     expect(() => new CommentDetail(payload)).toThrowError(
       "COMMENT_DETAIL.NOT_CONTAIN_NEEDED_PROPERTY"
     );
+  });
+
+  it("should default likeCount to 0 when likeCount property is missing from payload", () => {
+    // Arrange
+    const payload = { ...basePayload };
+    delete payload.likeCount; // likeCount is removed
+
+    // Action
+    const commentDetail = new CommentDetail(payload);
+
+    // Assert
+    expect(commentDetail.likeCount).toBe(0); // Assert it defaults to 0
   });
 
   it("should throw error when payload did not meet data type specification (content not string)", () => {
@@ -64,6 +78,7 @@ describe("CommentDetail entities", () => {
       username: "user123",
       date: "2025-05-19T07:22:33.555Z",
       content: 123, // should be string
+      likeCount: 0,
     };
 
     // Action and Assert
@@ -79,6 +94,7 @@ describe("CommentDetail entities", () => {
       username: "user123",
       date: "2025-05-19T07:22:33.555Z",
       content: "sebuah comment",
+      likeCount: 0,
     };
 
     // Action and Assert
@@ -94,6 +110,7 @@ describe("CommentDetail entities", () => {
       username: 123, // not a string
       date: "2025-05-19T07:22:33.555Z",
       content: "sebuah comment",
+      likeCount: 0,
     };
 
     // Action and Assert
@@ -109,6 +126,20 @@ describe("CommentDetail entities", () => {
       username: "user123",
       date: 1234567890, // not a string or Date object
       content: "sebuah comment",
+      likeCount: 0,
+    };
+
+    // Action and Assert
+    expect(() => new CommentDetail(payload)).toThrowError(
+      "COMMENT_DETAIL.NOT_MEET_DATA_TYPE_SPECIFICATION"
+    );
+  });
+
+  it("should throw error when payload likeCount is not a number", () => {
+    // Arrange
+    const payload = {
+      ...basePayload,
+      likeCount: "0", // Not a number
     };
 
     // Action and Assert
@@ -125,6 +156,7 @@ describe("CommentDetail entities", () => {
       date: "2025-05-19T07:22:33.555Z",
       content: "sebuah comment",
       replies: "this is not an array",
+      likeCount: 0,
     };
 
     // Action and Assert
@@ -133,13 +165,14 @@ describe("CommentDetail entities", () => {
     );
   });
 
-  it("should create commentDetail object correctly when replies are not provided", () => {
+  it("should create commentDetail object correctly when replies are not provided and likeCount is provided", () => {
     // Arrange
     const payload = {
       id: "comment-123",
       username: "user123",
       date: "2025-05-19T07:22:33.555Z",
       content: "sebuah comment",
+      likeCount: 5,
     };
 
     // Action
@@ -151,9 +184,27 @@ describe("CommentDetail entities", () => {
     expect(commentDetail.date).toEqual(payload.date);
     expect(commentDetail.content).toEqual(payload.content);
     expect(commentDetail.replies).toEqual([]); // Assert default replies
+    expect(commentDetail.likeCount).toEqual(5);
   });
 
-  it("should create commentDetail object correctly when replies are provided", () => {
+  it("should default likeCount to 0 if not provided in payload but other required fields are present", () => {
+    // Arrange
+    const payload = {
+      id: "comment-123",
+      username: "user123",
+      date: "2025-05-19T07:22:33.555Z",
+      content: "sebuah comment",
+      // likeCount is not provided
+    };
+
+    // Action
+    const commentDetail = new CommentDetail(payload);
+
+    // Assert
+    expect(commentDetail.likeCount).toEqual(0);
+  });
+
+  it("should create commentDetail object correctly when replies and likeCount are provided", () => {
     // Arrange
     const mockReplies = [
       { id: "reply-1", content: "reply content 1" },
@@ -165,6 +216,7 @@ describe("CommentDetail entities", () => {
       date: "2025-05-19T07:22:33.555Z",
       content: "sebuah comment",
       replies: mockReplies,
+      likeCount: 10,
     };
 
     // Action
@@ -176,9 +228,10 @@ describe("CommentDetail entities", () => {
     expect(commentDetail.date).toEqual(payload.date);
     expect(commentDetail.content).toEqual(payload.content);
     expect(commentDetail.replies).toEqual(mockReplies);
+    expect(commentDetail.likeCount).toEqual(10);
   });
 
-  it('should mask content with "**komentar telah dihapus**" when isDeleted is true', () => {
+  it('should mask content with "**komentar telah dihapus**" when isDeleted is true and include likeCount', () => {
     // Arrange
     const payload = {
       id: "comment-123",
@@ -186,6 +239,7 @@ describe("CommentDetail entities", () => {
       date: "2025-05-19T07:22:33.555Z",
       content: "sebuah comment",
       isDeleted: true,
+      likeCount: 3,
     };
 
     // Action
@@ -197,9 +251,10 @@ describe("CommentDetail entities", () => {
     expect(commentDetail.date).toEqual(payload.date);
     expect(commentDetail.content).toEqual("**komentar telah dihapus**");
     expect(commentDetail.replies).toEqual([]); // Check replies default
+    expect(commentDetail.likeCount).toEqual(3);
   });
 
-  it('should mask content with "**komentar telah dihapus**" when is_deleted (with underscore) is true', () => {
+  it('should mask content with "**komentar telah dihapus**" when is_deleted (with underscore) is true and include likeCount', () => {
     // Arrange
     const payload = {
       id: "comment-123",
@@ -208,6 +263,7 @@ describe("CommentDetail entities", () => {
       content: "sebuah comment",
       is_deleted: true,
       replies: [{ id: "reply-1" }],
+      likeCount: 7,
     };
 
     // Action
@@ -218,10 +274,11 @@ describe("CommentDetail entities", () => {
     expect(commentDetail.username).toEqual(payload.username);
     expect(commentDetail.date).toEqual(payload.date);
     expect(commentDetail.content).toEqual("**komentar telah dihapus**");
-    expect(commentDetail.replies).toEqual(payload.replies); // Check replies are passed through
+    expect(commentDetail.replies).toEqual(payload.replies);
+    expect(commentDetail.likeCount).toEqual(7);
   });
 
-  it("should correctly process date when it is a Date instance, matching specific ISO string", () => {
+  it("should correctly process date when it is a Date instance, matching specific ISO string and include likeCount", () => {
     // Arrange
     const specificDateString = "2025-05-19T07:22:33.555Z";
     const dateInstance = new Date(specificDateString);
@@ -230,8 +287,13 @@ describe("CommentDetail entities", () => {
       username: "testuser",
       content: "A test comment",
       replies: [], // Ensure replies is an array
+      likeCount: 0,
     };
-    const payloadWithDateInstance = { ...basePayload, date: dateInstance };
+    const payloadWithDateInstance = {
+      ...basePayload,
+      date: dateInstance,
+      likeCount: 2,
+    };
 
     // Action
     const commentDetail = new CommentDetail(payloadWithDateInstance);
@@ -239,9 +301,9 @@ describe("CommentDetail entities", () => {
     // Assert
     expect(commentDetail.date).toBe(dateInstance.toISOString());
     expect(commentDetail.date).toBe(specificDateString);
-    expect(commentDetail.id).toBe(basePayload.id);
-    expect(commentDetail.username).toBe(basePayload.username);
-    expect(commentDetail.content).toBe(basePayload.content);
-    expect(commentDetail.replies).toEqual(basePayload.replies);
+    expect(commentDetail.id).toBe(payloadWithDateInstance.id);
+    expect(commentDetail.username).toBe(payloadWithDateInstance.username);
+    expect(commentDetail.content).toBe(payloadWithDateInstance.content);
+    expect(commentDetail.replies).toEqual(payloadWithDateInstance.replies);
   });
 });

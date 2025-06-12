@@ -10,6 +10,7 @@ class CommentDetail {
       isDeleted = false,
       is_deleted = false,
       replies = [],
+      likeCount = 0, // Add likeCount with a default value
     } = payload;
     const deleted = isDeleted || is_deleted;
 
@@ -19,10 +20,12 @@ class CommentDetail {
       date instanceof Date ? date.toISOString() : new Date(date).toISOString();
     this.content = deleted ? "**komentar telah dihapus**" : content;
     this.replies = replies;
+    this.likeCount = likeCount;
   }
 
-  _verifyPayload({ id, username, date, content, replies }) {
+  _verifyPayload({ id, username, date, content, replies, likeCount }) {
     if (!id || !username || !date || !content) {
+      // Check for likeCount
       throw new Error("COMMENT_DETAIL.NOT_CONTAIN_NEEDED_PROPERTY");
     }
 
@@ -35,7 +38,8 @@ class CommentDetail {
       typeof username !== "string" ||
       (typeof date !== "string" && !(date instanceof Date)) ||
       typeof content !== "string" ||
-      (replies !== undefined && !Array.isArray(replies))
+      (replies !== undefined && !Array.isArray(replies)) ||
+      (likeCount !== undefined && typeof likeCount !== "number")
     ) {
       throw new Error("COMMENT_DETAIL.NOT_MEET_DATA_TYPE_SPECIFICATION");
     }

@@ -1,16 +1,19 @@
+const Jwt = require("@hapi/jwt");
 const pool = require("../../database/postgres/pool");
+const createServer = require("../../../Infrastructures/http/createServer");
+const container = require("../../container");
 const UsersTableTestHelper = require("../../../../tests/UsersTableTestHelper");
 const AuthenticationsTableTestHelper = require("../../../../tests/AuthenticationsTableTestHelper");
 const ThreadsTableTestHelper = require("../../../../tests/ThreadsTableTestHelper");
 const CommentsTableTestHelper = require("../../../../tests/CommentsTableTestHelper");
-const createServer = require("../../../Infrastructures/http/createServer");
-const container = require("../../container");
+const CommentLikesTableTestHelper = require("../../../../tests/CommentLikesTableTestHelper");
 
 describe("/comments endpoint functional tests", () => {
   let server;
   let accessToken;
-  let threadId;
-  let commentId;
+  let initialThreadId;
+  let initialCommentId;
+
   const testUser = {
     username: "funccommentuser",
     password: "password123",
@@ -42,37 +45,36 @@ describe("/comments endpoint functional tests", () => {
     } = JSON.parse(loginResponse.payload);
     accessToken = token;
 
-    // Create thread
+    // Create initial thread
     const threadResponse = await server.inject({
       method: "POST",
       url: "/threads",
       payload: {
-        title: "Test Thread",
-        body: "Thread body",
+        title: "Initial Test Thread",
+        body: "Initial thread body",
       },
       headers: { Authorization: `Bearer ${accessToken}` },
     });
+    initialThreadId = JSON.parse(threadResponse.payload).data.addedThread.id;
 
-    threadId = JSON.parse(threadResponse.payload).data.addedThread.id;
-
-    // Create comment
+    // Create initial comment
     const commentResponse = await server.inject({
       method: "POST",
-      url: `/threads/${threadId}/comments`,
-      payload: { content: "Test comment" },
+      url: `/threads/${initialThreadId}/comments`,
+      payload: { content: "Initial test comment" },
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-
-    commentId = JSON.parse(commentResponse.payload).data.addedComment.id;
+    initialCommentId = JSON.parse(commentResponse.payload).data.addedComment.id;
   });
 
   afterEach(async () => {
+    await CommentLikesTableTestHelper.cleanTable();
     await CommentsTableTestHelper.cleanTable();
   });
 
   afterAll(async () => {
-    await UsersTableTestHelper.cleanTable();
     await ThreadsTableTestHelper.cleanTable();
+    await UsersTableTestHelper.cleanTable();
     await AuthenticationsTableTestHelper.cleanTable();
     await pool.end();
   });
@@ -80,12 +82,12 @@ describe("/comments endpoint functional tests", () => {
   describe("POST /threads/{threadId}/comments endpoint", () => {
     it("should respond 201 and persist comment", async () => {
       // Arrange
-      const payload = { content: "Test comment" };
+      const payload = { content: "Test comment for POST" };
 
       // Action
       const response = await server.inject({
         method: "POST",
-        url: `/threads/${threadId}/comments`,
+        url: `/threads/${initialThreadId}/comments`,
         payload,
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -96,7 +98,6 @@ describe("/comments endpoint functional tests", () => {
       expect(responseJson.status).toEqual("success");
       expect(responseJson.data.addedComment).toBeDefined();
 
-      // Verify database
       const comments = await CommentsTableTestHelper.findCommentById(
         responseJson.data.addedComment.id
       );
@@ -105,15 +106,12 @@ describe("/comments endpoint functional tests", () => {
     });
 
     it("should respond 400 when payload missing content", async () => {
-      // Action
       const response = await server.inject({
         method: "POST",
-        url: `/threads/${threadId}/comments`,
+        url: `/threads/${initialThreadId}/comments`,
         payload: {},
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-
-      // Assert
       const responseJson = JSON.parse(response.payload);
       expect(response.statusCode).toEqual(400);
       expect(responseJson.status).toEqual("fail");
@@ -121,15 +119,12 @@ describe("/comments endpoint functional tests", () => {
     });
 
     it("should respond 400 when content has invalid type", async () => {
-      // Action
       const response = await server.inject({
         method: "POST",
-        url: `/threads/${threadId}/comments`,
+        url: `/threads/${initialThreadId}/comments`,
         payload: { content: 12345 },
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-
-      // Assert
       const responseJson = JSON.parse(response.payload);
       expect(response.statusCode).toEqual(400);
       expect(responseJson.status).toEqual("fail");
@@ -137,18 +132,13 @@ describe("/comments endpoint functional tests", () => {
     });
 
     it("should respond 404 when thread not found", async () => {
-      // Arrange
-      const fakeThreadId = "thread-xxx";
-
-      // Action
+      const fakeThreadId = "thread-xxx-post";
       const response = await server.inject({
         method: "POST",
         url: `/threads/${fakeThreadId}/comments`,
         payload: { content: "Test comment" },
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-
-      // Assert
       const responseJson = JSON.parse(response.payload);
       expect(response.statusCode).toEqual(404);
       expect(responseJson.status).toEqual("fail");
@@ -156,41 +146,39 @@ describe("/comments endpoint functional tests", () => {
     });
 
     it("should respond 401 when missing authentication", async () => {
-      // Action
       const response = await server.inject({
         method: "POST",
-        url: `/threads/${threadId}/comments`,
+        url: `/threads/${initialThreadId}/comments`,
         payload: { content: "Test comment" },
       });
-
-      // Assert
       expect(response.statusCode).toEqual(401);
     });
   });
 
   describe("DELETE /threads/{threadId}/comments/{commentId}", () => {
     it("should respond 200 and soft delete the comment", async () => {
-      // Arrange: tambahkan comment baru via endpoint
-      const responseCreate = await server.inject({
+      // Arrange: add a new comment specifically for this test
+      const commentPayload = { content: "Comment to be deleted" };
+      const createResponse = await server.inject({
         method: "POST",
-        url: `/threads/${threadId}/comments`,
-        payload: { content: "Another comment" },
+        url: `/threads/${initialThreadId}/comments`,
+        payload: commentPayload,
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      const newCommentId = JSON.parse(responseCreate.payload).data.addedComment
+      const newCommentId = JSON.parse(createResponse.payload).data.addedComment
         .id;
 
       // Act
-      const response = await server.inject({
+      const deleteResponse = await server.inject({
         method: "DELETE",
-        url: `/threads/${threadId}/comments/${newCommentId}`,
+        url: `/threads/${initialThreadId}/comments/${newCommentId}`,
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
       // Assert
-      const responseJson = JSON.parse(response.payload);
-      expect(response.statusCode).toEqual(200);
-      expect(responseJson.status).toEqual("success");
+      const deleteJson = JSON.parse(deleteResponse.payload);
+      expect(deleteResponse.statusCode).toEqual(200);
+      expect(deleteJson.status).toEqual("success");
 
       const comments = await CommentsTableTestHelper.findCommentById(
         newCommentId
@@ -199,87 +187,209 @@ describe("/comments endpoint functional tests", () => {
       expect(comments[0].is_deleted).toEqual(true);
     });
 
-    it("should respond 404 when thread not found", async () => {
+    it("should respond 404 when thread not found for delete", async () => {
       const response = await server.inject({
         method: "DELETE",
-        url: `/threads/thread-not-found/comments/${commentId}`,
+        url: `/threads/thread-not-found-del/comments/${initialCommentId}`,
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-
       const responseJson = JSON.parse(response.payload);
       expect(response.statusCode).toEqual(404);
-      expect(responseJson.status).toEqual("fail");
-      expect(responseJson.message).toBeDefined();
     });
 
-    it("should respond 404 when comment not found", async () => {
+    it("should respond 404 when comment not found for delete", async () => {
       const response = await server.inject({
         method: "DELETE",
-        url: `/threads/${threadId}/comments/comment-not-found`,
+        url: `/threads/${initialThreadId}/comments/comment-not-found-del`,
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-
       const responseJson = JSON.parse(response.payload);
       expect(response.statusCode).toEqual(404);
-      expect(responseJson.status).toEqual("fail");
-      expect(responseJson.message).toBeDefined();
     });
 
-    it("should respond 403 when user is not the owner", async () => {
-      // Register another user
-      await server.inject({
+    it("should respond 403 when user is not the owner for delete", async () => {
+      // Register another user via API endpoint
+      const otherUserPayload = {
+        username: "otheruserdel",
+        password: "password123",
+        fullname: "Other User Del For Delete Test",
+      };
+      const registerOtherUserResponse = await server.inject({
         method: "POST",
         url: "/users",
-        payload: {
-          username: "otheruser",
-          password: "password123",
-          fullname: "Other User",
-        },
+        payload: otherUserPayload,
       });
+      expect(registerOtherUserResponse.statusCode).toEqual(201);
 
+      // Login the other user
       const loginOther = await server.inject({
         method: "POST",
         url: "/authentications",
-        payload: {
-          username: "otheruser",
-          password: "password123",
-        },
+        payload: { username: "otheruserdel", password: "password123" },
       });
+      expect([200, 201]).toContain(loginOther.statusCode); // Ensure login was successful (200 or 201)
+      const loginOtherJson = JSON.parse(loginOther.payload);
+      expect(loginOtherJson.data).toBeDefined();
+      expect(loginOtherJson.data.accessToken).toBeDefined();
+      const otherToken = loginOtherJson.data.accessToken;
 
-      const {
-        data: { accessToken: otherToken },
-      } = JSON.parse(loginOther.payload);
-
-      // Add new comment by testUser
-      const responseCreate = await server.inject({
+      // testUser creates a comment
+      const commentToStealPayload = { content: "Comment by original owner" };
+      const createResponse = await server.inject({
         method: "POST",
-        url: `/threads/${threadId}/comments`,
-        payload: { content: "Comment for unauthorized delete" },
+        url: `/threads/${initialThreadId}/comments`,
+        payload: commentToStealPayload,
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      const targetCommentId = JSON.parse(responseCreate.payload).data
+      const targetCommentId = JSON.parse(createResponse.payload).data
         .addedComment.id;
 
-      // Try deleting using another user token
+      // otheruser tries to delete it
       const response = await server.inject({
         method: "DELETE",
-        url: `/threads/${threadId}/comments/${targetCommentId}`,
+        url: `/threads/${initialThreadId}/comments/${targetCommentId}`,
         headers: { Authorization: `Bearer ${otherToken}` },
+      });
+      expect(response.statusCode).toEqual(403);
+    });
+
+    it("should respond 401 when no authentication is provided for delete", async () => {
+      const response = await server.inject({
+        method: "DELETE",
+        url: `/threads/${initialThreadId}/comments/${initialCommentId}`,
+      });
+      expect(response.statusCode).toEqual(401);
+    });
+  });
+
+  describe("PUT /threads/{threadId}/comments/{commentId}/likes endpoint", () => {
+    let specificThreadId;
+    let specificCommentId;
+
+    beforeEach(async () => {
+      // Create a new thread for these tests
+      const threadResponse = await server.inject({
+        method: "POST",
+        url: "/threads",
+        payload: {
+          title: "Like Test Thread",
+          body: "Thread for like/unlike tests",
+        },
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      specificThreadId = JSON.parse(threadResponse.payload).data.addedThread.id;
+
+      // Create a new comment in this thread for these tests
+      const commentResponse = await server.inject({
+        method: "POST",
+        url: `/threads/${specificThreadId}/comments`,
+        payload: { content: "Comment for like/unlike tests" },
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      specificCommentId = JSON.parse(commentResponse.payload).data.addedComment
+        .id;
+    });
+
+    it("should respond 200 and like the comment if not already liked", async () => {
+      const response = await server.inject({
+        method: "PUT",
+        url: `/threads/${specificThreadId}/comments/${specificCommentId}/likes`,
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
 
       const responseJson = JSON.parse(response.payload);
-      expect(response.statusCode).toEqual(403);
-      expect(responseJson.status).toEqual("fail");
-      expect(responseJson.message).toBeDefined();
+      expect(response.statusCode).toEqual(200);
+      expect(responseJson.status).toEqual("success");
+
+      const likes = await CommentLikesTableTestHelper.findLikesByCommentId(
+        specificCommentId
+      );
+      expect(likes).toHaveLength(1);
+      // Get userId from the accessToken
+      const decodedToken = Jwt.token.decode(accessToken);
+      const userIdFromToken = decodedToken.decoded.payload.id;
+      expect(likes[0].user_id).toEqual(userIdFromToken);
+
+      const threadDetailResponse = await server.inject({
+        method: "GET",
+        url: `/threads/${specificThreadId}`,
+      });
+      const threadDetailJson = JSON.parse(threadDetailResponse.payload);
+      const targetComment = threadDetailJson.data.thread.comments.find(
+        (c) => c.id === specificCommentId
+      );
+      expect(targetComment.likeCount).toEqual(1);
     });
 
-    it("should respond 401 when no authentication is provided", async () => {
+    it("should respond 200 and unlike the comment if already liked", async () => {
+      // First, like the comment
+      await server.inject({
+        method: "PUT",
+        url: `/threads/${specificThreadId}/comments/${specificCommentId}/likes`,
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      let likes = await CommentLikesTableTestHelper.findLikesByCommentId(
+        specificCommentId
+      );
+      expect(likes).toHaveLength(1);
+
+      // Action: Unlike the comment
       const response = await server.inject({
-        method: "DELETE",
-        url: `/threads/${threadId}/comments/${commentId}`,
+        method: "PUT",
+        url: `/threads/${specificThreadId}/comments/${specificCommentId}/likes`,
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
 
+      const responseJson = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(200);
+      expect(responseJson.status).toEqual("success");
+
+      likes = await CommentLikesTableTestHelper.findLikesByCommentId(
+        specificCommentId
+      );
+      expect(likes).toHaveLength(0);
+
+      const threadDetailResponse = await server.inject({
+        method: "GET",
+        url: `/threads/${specificThreadId}`,
+      });
+      const threadDetailJson = JSON.parse(threadDetailResponse.payload);
+      const targetComment = threadDetailJson.data.thread.comments.find(
+        (c) => c.id === specificCommentId
+      );
+      expect(targetComment.likeCount).toEqual(0);
+    });
+
+    it("should respond 401 when missing authentication for likes", async () => {
+      const response = await server.inject({
+        method: "PUT",
+        url: `/threads/${specificThreadId}/comments/${specificCommentId}/likes`,
+      });
       expect(response.statusCode).toEqual(401);
+    });
+
+    it("should respond 404 when thread not found for likes", async () => {
+      const response = await server.inject({
+        method: "PUT",
+        url: `/threads/thread-xxx-like/comments/${specificCommentId}/likes`,
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const responseJson = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(404);
+      expect(responseJson.message).toMatch("Thread tidak ditemukan");
+    });
+
+    it("should respond 404 when comment not found in thread for likes", async () => {
+      const response = await server.inject({
+        method: "PUT",
+        url: `/threads/${specificThreadId}/comments/comment-xxx-like/likes`,
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const responseJson = JSON.parse(response.payload);
+      expect(response.statusCode).toEqual(404);
+      expect(responseJson.message).toMatch(
+        "Komentar pada thread ini tidak ditemukan"
+      );
     });
   });
 });

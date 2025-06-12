@@ -2,3 +2,9 @@
 .qodo
 node_modules
 .env
+postman_test
+package-lock.json
+config/database/test.json
+config/database/prod.json
+coverage
+forum-api-webserver.pem
