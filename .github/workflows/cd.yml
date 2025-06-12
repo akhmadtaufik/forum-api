@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - dev-ops
 
 jobs:
   deploy:
@@ -17,7 +16,7 @@ jobs:
         env:
           APP_PATH: ${{ vars.APP_PATH }}
           GIT_URL: ${{ vars.GIT_URL }}
-          HOST: 0.0.0.0
+          HOST: ${{ vars.DEV_URL}}
           PORT: ${{secrets.APP_PORT}}
           PGHOST: ${{ secrets.DB_HOST }}
           PGUSER: ${{ secrets.DB_USER }}
@@ -103,4 +102,11 @@ jobs:
 
       - name: Check docker running
         run: |
+          echo "=== Container Status ==="
+          sleep 20
           sudo docker ps
+
+      - name: Hit Endpoint
+        run: |
+          sleep 20
+          curl ${{ secrets.HIT_ENDPOINT_TEST }}
