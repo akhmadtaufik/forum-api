@@ -83,11 +83,16 @@ jobs:
             fi
 
             # Create/overwrite .env file with deployment-specific variables
-            echo "PGHOST=$PGHOST" > .env
+            echo "HOST=$HOST" > .env
+            echo "PORT=$PORT" >> .env
+            echo "PGHOST=$PGHOST" >> .env
             echo "PGUSER=$PGUSER" >> .env
             echo "PGDATABASE=$PGDATABASE" >> .env
             echo "PGPASSWORD=$PGPASSWORD" >> .env
             echo "PGPORT=$PGPORT" >> .env
+            echo "ACCESS_TOKEN_KEY=$ACCESS_TOKEN_KEY" >> .env
+            echo "REFRESH_TOKEN_KEY=$REFRESH_TOKEN_KEY" >> .env
+            echo "ACCCESS_TOKEN_AGE=$ACCCESS_TOKEN_AGE" >> .env
 
             echo "--- DOCKER COMPOSE ---"
             # Run app using Docker Compose
