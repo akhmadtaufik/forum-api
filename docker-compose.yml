@@ -16,7 +16,7 @@ services:
       # Database produksi
       PGUSER: "${PGUSER}"
       PGPASSWORD: "${PGPASSWORD}"
-      PGHOST: "postgres-db"
+      PGHOST: "${PGHOST}"
       PGPORT: "${PGPORT}"
       PGDATABASE: "${PGDATABASE}"
       # Database test (untuk referensi dalam aplikasi)
