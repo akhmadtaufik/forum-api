@@ -52,15 +52,25 @@ jobs:
         run: |
           sudo docker compose up --build --detach
 
-      - name: Debug container status
-        if: ${{ failure() }}
+      - name: Wait for container and check status
         run: |
-          echo "=== Docker Container Status ==="
+          echo "Waiting for container to start..."
+          sleep 30
+
+          echo "=== Container Status ==="
           sudo docker ps -a
+
           echo "=== Container Logs ==="
           sudo docker logs forum-api
-          echo "=== Environment Check ==="
-          sudo docker exec forum-api bash -c "env | grep -E '(POSTGRES|NODE)'"
+
+          echo "=== Container Health Check ==="
+          if sudo docker ps | grep -q forum-api; then
+            echo "Container is running"
+          else
+            echo "Container is not running - checking logs..."
+            sudo docker logs forum-api
+            exit 1
+          fi
 
       - name: Run tests (Unit, Integration, Functional)
         run: |
