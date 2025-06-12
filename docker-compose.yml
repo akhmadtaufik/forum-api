@@ -46,6 +46,44 @@ services:
       - forum-network
     restart: unless-stopped
 
+  api-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: forum-api-prod
+    working_dir: /usr/src/app
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      NODE_ENV: production
+      # Database produksi
+      PGUSER: "${PGUSER}"
+      PGPASSWORD: "${PGPASSWORD}"
+      PGHOST: "${PGHOST}"
+      PGPORT: "${PGPORT}"
+      PGDATABASE: "${PGDATABASE}"
+      # JWT Token
+      ACCESS_TOKEN_KEY: "${ACCESS_TOKEN_KEY}"
+      REFRESH_TOKEN_KEY: "${REFRESH_TOKEN_KEY}"
+      ACCCESS_TOKEN_AGE: "${ACCCESS_TOKEN_AGE}"
+    env_file:
+      - .env
+    command: >
+      sh -c "
+        echo 'Starting container...' &&
+        echo 'Testing database connections...' &&
+        (timeout 10 nc -zv \$PGHOST \$PGPORT && echo 'Production DB port reachable' || echo 'Production DB port not reachable') &&
+        echo 'Running migrations...' &&
+        (npm run migrate up || echo 'Production migration failed') &&
+        echo 'Starting application...' &&
+        npm run start"
+    networks:
+      - forum-network
+    restart: unless-stopped
+
 networks:
   forum-network:
     name: forum-network
